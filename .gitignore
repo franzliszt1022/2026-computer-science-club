@@ -1,3 +1,8 @@
 .godot/
 *.tmp
 .claude/settings.local.json
+
+# Godot (legacy, not used - project moved to Phaser/web)
+project.godot
+scenes/
+scripts/
