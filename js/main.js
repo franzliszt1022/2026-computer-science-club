@@ -5,6 +5,7 @@ const config = {
   parent: 'game-container',
   backgroundColor: '#2d3436',
   fps: { forceSetTimeOut: true },
+  dom: { createContainer: true },
   scene: [BootScene, MenuScene, GameScene, GameOverScene],
 };
 

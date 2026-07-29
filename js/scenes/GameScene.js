@@ -7,6 +7,7 @@ class GameScene extends Phaser.Scene {
     this.gold = 100;
     this.lives = 20;
     this.wave = 0;
+    this.kills = 0;
     this.totalWaves = 7;
     this.enemies = [];
     this.towers = [];
@@ -185,6 +186,7 @@ class GameScene extends Phaser.Scene {
 
   onEnemyKilled(enemy) {
     this.gold += enemy.reward;
+    this.kills += 1;
     this.enemies.splice(this.enemies.indexOf(enemy), 1);
     this.updateUI();
   }
@@ -195,8 +197,13 @@ class GameScene extends Phaser.Scene {
     this.updateUI();
 
     if (this.lives <= 0) {
-      this.scene.start('GameOverScene', { won: false, wave: this.wave });
+      this.scene.start('GameOverScene', this.buildResultData(false));
     }
+  }
+
+  buildResultData(won) {
+    const score = this.wave * 100 + this.kills * 5 + this.gold;
+    return { won, wave: this.wave, kills: this.kills, gold: this.gold, score };
   }
 
   update(time, delta) {
@@ -214,7 +221,7 @@ class GameScene extends Phaser.Scene {
         this.waveActive = false;
 
         if (this.wave >= this.totalWaves) {
-          this.scene.start('GameOverScene', { won: true, wave: this.wave });
+          this.scene.start('GameOverScene', this.buildResultData(true));
           return;
         }
         this.time.delayedCall(this.waveCooldown, () => this.startWave());
