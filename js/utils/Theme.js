@@ -13,6 +13,12 @@ const THEME = {
   textDim: '#9aa5b5',
 };
 
+const DIFFICULTY_PRESETS = {
+  easy: { label: '쉬움', lives: 7, gold: 150, healthMult: 0.7, scoreMult: 0.7, color: 0x2ecc71 },
+  normal: { label: '보통', lives: 4, gold: 120, healthMult: 0.85, scoreMult: 1.0, color: 0xffd23f },
+  hard: { label: '어려움', lives: 2, gold: 100, healthMult: 1.0, scoreMult: 1.5, color: 0xe74c3c },
+};
+
 function drawBackground(scene) {
   const { width, height } = scene.scale;
   const g = scene.add.graphics();

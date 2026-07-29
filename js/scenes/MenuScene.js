@@ -28,21 +28,42 @@ class MenuScene extends Phaser.Scene {
 
     this.add.rectangle(width / 2, height / 2 - 40, 160, 3, THEME.accent, 0.8);
 
-    const startText = this.add.text(width / 2, height / 2 + 20, '클릭해서 시작', {
-      fontSize: '28px',
+    const promptText = this.add.text(width / 2, height / 2 + 20, '난이도를 선택하세요', {
+      fontSize: '20px',
       color: '#ffd23f',
     }).setOrigin(0.5);
 
     this.tweens.add({
-      targets: startText,
+      targets: promptText,
       alpha: 0.3,
       duration: 700,
       yoyo: true,
       repeat: -1,
     });
 
-    this.input.once('pointerdown', () => {
-      this.scene.start('GameScene');
+    this.buildDifficultyButtons(width / 2, height / 2 + 90);
+  }
+
+  buildDifficultyButtons(centerX, y) {
+    const difficulties = ['easy', 'normal', 'hard'];
+
+    difficulties.forEach((key, i) => {
+      const preset = DIFFICULTY_PRESETS[key];
+      const bx = centerX + (i - 1) * 160;
+
+      this.add.rectangle(bx + 3, y + 3, 140, 50, 0x000000, 0.3).setOrigin(0.5);
+
+      const btn = this.add.rectangle(bx, y, 140, 50, preset.color, 0.85).setOrigin(0.5);
+      btn.setStrokeStyle(1, 0xffffff, 0.3);
+      btn.setInteractive({ useHandCursor: true });
+
+      this.add.text(bx, y, preset.label, {
+        fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+      }).setOrigin(0.5);
+
+      btn.on('pointerdown', () => {
+        this.scene.start('GameScene', { difficulty: key });
+      });
     });
   }
 }

@@ -30,14 +30,24 @@ class Projectile {
   }
 
   hit() {
-    if (this.splashRadius > 0) {
-      for (const enemy of this.scene.enemies) {
-        if (!enemy.alive) continue;
-        const dist = Phaser.Math.Distance.Between(this.sprite.x, this.sprite.y, enemy.x, enemy.y);
-        if (dist <= this.splashRadius) enemy.takeDamage(this.damage);
-      }
-    } else {
-      this.target.takeDamage(this.damage);
+    const isCrit = Math.random() < 0.12;
+    const dmg = isCrit ? Math.round(this.damage * 1.8) : this.damage;
+
+    const targets = this.splashRadius > 0
+      ? this.scene.enemies.filter((e) => e.alive
+        && Phaser.Math.Distance.Between(this.sprite.x, this.sprite.y, e.x, e.y) <= this.splashRadius)
+      : [this.target];
+
+    for (const enemy of targets) {
+      enemy.takeDamage(dmg);
+      FX.hitBurst(this.scene, enemy.x, enemy.y, enemy.color);
+      DamageNumber.show(this.scene, enemy.x, enemy.y, dmg, { crit: isCrit });
+    }
+
+    SFX.play(this.scene, 'sfx_hit');
+
+    if (isCrit || targets.length >= 2) {
+      FX.shake(this.scene, { intensity: isCrit ? 0.006 : 0.004 });
     }
   }
 

@@ -9,6 +9,7 @@ class GameOverScene extends Phaser.Scene {
     this.kills = data.kills || 0;
     this.gold = data.gold || 0;
     this.score = data.score || 0;
+    this.difficultyLabel = data.difficultyLabel || '';
   }
 
   create() {
@@ -35,7 +36,7 @@ class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5);
     title.setShadow(0, 4, 'rgba(0,0,0,0.5)', 8, false, true);
 
-    this.add.text(width / 2, 150, `도달 웨이브: ${this.wave}   점수: ${this.score}`, {
+    this.add.text(width / 2, 150, `난이도: ${this.difficultyLabel}   도달 웨이브: ${this.wave}   점수: ${this.score}`, {
       fontSize: '20px',
       color: THEME.text,
     }).setOrigin(0.5);
@@ -73,7 +74,7 @@ class GameOverScene extends Phaser.Scene {
 
     const submit = () => {
       const initials = (inputEl.value || 'YOU').trim() || 'YOU';
-      Leaderboard.addScore(initials, this.score, this.wave);
+      Leaderboard.addScore(initials, this.score, this.wave, this.difficultyLabel);
       this.form.destroy();
       badge.destroy();
       this.buildLeaderboardView(230);
@@ -97,7 +98,7 @@ class GameOverScene extends Phaser.Scene {
 
     const scores = Leaderboard.getScores();
     const lines = scores.length > 0
-      ? scores.map((s, i) => `${String(i + 1).padStart(2, ' ')}.  ${s.initials.padEnd(Leaderboard.MAX_INITIALS_LENGTH, ' ')}   ${s.score}점  (Wave ${s.wave})`).join('\n')
+      ? scores.map((s, i) => `${String(i + 1).padStart(2, ' ')}.  ${s.initials.padEnd(Leaderboard.MAX_INITIALS_LENGTH, ' ')}   ${s.score}점  (Wave ${s.wave}${s.difficultyLabel ? `, ${s.difficultyLabel}` : ''})`).join('\n')
       : '아직 기록이 없습니다';
 
     this.add.text(width / 2, startY + 35, lines, {
@@ -124,7 +125,7 @@ class GameOverScene extends Phaser.Scene {
     });
 
     retryText.on('pointerdown', () => {
-      this.scene.start('GameScene');
+      this.scene.start('MenuScene');
     });
   }
 }

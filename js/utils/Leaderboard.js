@@ -19,12 +19,13 @@ const Leaderboard = {
     return score > scores[scores.length - 1].score;
   },
 
-  addScore(initials, score, wave) {
+  addScore(initials, score, wave, difficultyLabel) {
     const scores = this.getScores();
     scores.push({
       initials: (initials || '???').toUpperCase().slice(0, this.MAX_INITIALS_LENGTH),
       score,
       wave,
+      difficultyLabel: difficultyLabel || '',
     });
     scores.sort((a, b) => b.score - a.score);
     const trimmed = scores.slice(0, this.MAX_ENTRIES);

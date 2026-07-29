@@ -3,9 +3,18 @@ class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
+  init(data) {
+    this.difficulty = (data && data.difficulty) || 'hard';
+  }
+
   create() {
-    this.gold = 100;
-    this.lives = 2;
+    const preset = DIFFICULTY_PRESETS[this.difficulty];
+
+    this.gold = preset.gold;
+    this.lives = preset.lives;
+    this.enemyHealthMult = preset.healthMult;
+    this.scoreMult = preset.scoreMult;
+    this.difficultyLabel = preset.label;
     this.wave = 0;
     this.kills = 0;
     this.totalWaves = 10;
@@ -20,11 +29,16 @@ class GameScene extends Phaser.Scene {
     this.waveCooldown = 2000;
 
     this.selectedTowerType = 'basic';
+    this.vignetteActive = false;
+    this.tutorialDismissed = false;
+
+    SFX.init(this);
 
     drawBackground(this);
     this.buildPath();
     this.drawPath();
     this.buildUI();
+    this.showTutorialHint();
   }
 
   buildPath() {
@@ -51,18 +65,25 @@ class GameScene extends Phaser.Scene {
     topPanel.setStrokeStyle(1, THEME.panelBorder, 0.8);
     this.goldText = this.add.text(16, 12, '', { fontSize: '20px', color: '#ffd23f' });
     this.livesText = this.add.text(16, 40, '', { fontSize: '20px', color: '#ff6b6b' });
-    this.waveText = this.add.text(16, 68, '', { fontSize: '20px', color: THEME.text });
+    this.waveText = this.add.text(16, 68, '', { fontSize: '16px', color: THEME.text });
 
     const bottomPanel = this.add.rectangle(0, 570, 960, 70, THEME.panel, 0.85).setOrigin(0, 0);
     bottomPanel.setStrokeStyle(1, THEME.panelBorder, 0.8);
     this.hintText = this.add.text(16, 578, '타워를 선택하고 배치할 위치를 클릭하세요', { fontSize: '14px', color: THEME.textDim });
+
+    const { width, height } = this.scale;
+    this.vignette = this.add.graphics();
+    this.vignette.lineStyle(36, THEME.danger, 1);
+    this.vignette.strokeRect(18, 18, width - 36, height - 36);
+    this.vignette.setDepth(90);
+    this.vignette.setAlpha(0);
 
     this.buildTowerButtons();
     this.updateUI();
 
     this.input.on('pointerdown', (pointer) => this.tryPlaceTower(pointer.x, pointer.y));
 
-    this.time.delayedCall(this.waveCooldown, () => this.startWave());
+    this.scheduleNextWave();
   }
 
   buildTowerButtons() {
@@ -107,10 +128,43 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  showTutorialHint() {
+    const { width } = this.scale;
+    const bg = this.add.rectangle(width / 2, 300, 520, 90, 0x000000, 0.65).setOrigin(0.5).setDepth(80);
+    const text = this.add.text(width / 2, 300,
+      '① 아래 타워를 선택하세요\n② 필드를 클릭해 설치하세요\n③ 적을 막아내세요!', {
+        fontSize: '16px', color: THEME.text, align: 'center', lineSpacing: 6,
+      }).setOrigin(0.5).setDepth(81);
+
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerdown', (pointer, x, y, event) => {
+      event.stopPropagation();
+      this.dismissTutorial();
+    });
+
+    this.tutorialElements = [bg, text];
+    this.time.delayedCall(4000, () => this.dismissTutorial());
+  }
+
+  dismissTutorial() {
+    if (this.tutorialDismissed) return;
+    this.tutorialDismissed = true;
+    this.tweens.add({
+      targets: this.tutorialElements,
+      alpha: 0,
+      duration: 300,
+      onComplete: () => this.tutorialElements.forEach((el) => el.destroy()),
+    });
+  }
+
   updateUI() {
     this.goldText.setText(`Gold: ${this.gold}`);
     this.livesText.setText(`Lives: ${this.lives}`);
-    this.waveText.setText(`Wave: ${this.wave} / ${this.totalWaves}`);
+    this.waveText.setText(`Wave: ${this.wave} / ${this.totalWaves}  (${this.difficultyLabel})`);
+  }
+
+  scheduleNextWave() {
+    this.time.delayedCall(this.waveCooldown, () => this.startWave());
   }
 
   startWave() {
@@ -119,6 +173,25 @@ class GameScene extends Phaser.Scene {
     this.waveActive = true;
     this.spawnTimer = 0;
     this.updateUI();
+  }
+
+  showWaveClearBanner(wave) {
+    const { width, height } = this.scale;
+    const bonus = wave * 5;
+    this.gold += bonus;
+    this.updateUI();
+    SFX.play(this, 'sfx_wave_clear');
+
+    const banner = this.add.text(width / 2, height / 2 - 100, `WAVE ${wave} CLEAR!  +${bonus}G`, {
+      fontSize: '28px', color: '#ffd23f', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(70).setScale(0);
+
+    this.tweens.add({ targets: banner, scale: 1, duration: 250, ease: 'Back.Out' });
+    this.time.delayedCall(1200, () => {
+      this.tweens.add({
+        targets: banner, alpha: 0, duration: 300, onComplete: () => banner.destroy(),
+      });
+    });
   }
 
   buildWaveQueue(wave) {
@@ -158,13 +231,15 @@ class GameScene extends Phaser.Scene {
   spawnEnemy(type) {
     const def = ENEMY_TYPES[type];
     const bonusHealth = (this.wave - 1) * def.healthPerWave;
+    const health = Math.round((def.healthBase + bonusHealth) * this.enemyHealthMult);
     const enemy = new Enemy(this, this.path, {
       speed: def.speed,
-      health: def.healthBase + bonusHealth,
+      health,
       reward: def.reward,
       color: def.color,
       radius: def.radius,
     });
+    enemy.isBoss = type === 'boss';
     this.enemies.push(enemy);
   }
 
@@ -182,6 +257,9 @@ class GameScene extends Phaser.Scene {
     const tower = new Tower(this, x, y, def);
     this.towers.push(tower);
     this.updateUI();
+
+    SFX.play(this, 'sfx_place');
+    this.dismissTutorial();
   }
 
   onEnemyKilled(enemy) {
@@ -196,14 +274,26 @@ class GameScene extends Phaser.Scene {
     this.enemies.splice(this.enemies.indexOf(enemy), 1);
     this.updateUI();
 
+    if (this.lives === 1 && !this.vignetteActive) {
+      this.vignetteActive = true;
+      this.tweens.add({
+        targets: this.vignette, alpha: { from: 0, to: 0.5 }, duration: 500, yoyo: true, repeat: -1,
+      });
+    }
+
     if (this.lives <= 0) {
+      SFX.play(this, 'sfx_gameover');
       this.scene.start('GameOverScene', this.buildResultData(false));
     }
   }
 
   buildResultData(won) {
-    const score = this.wave * 100 + this.kills * 5 + this.gold;
-    return { won, wave: this.wave, kills: this.kills, gold: this.gold, score };
+    const rawScore = this.wave * 100 + this.kills * 5 + this.gold;
+    const score = Math.round(rawScore * this.scoreMult);
+    return {
+      won, wave: this.wave, kills: this.kills, gold: this.gold, score,
+      difficulty: this.difficulty, difficultyLabel: this.difficultyLabel,
+    };
   }
 
   update(time, delta) {
@@ -221,10 +311,12 @@ class GameScene extends Phaser.Scene {
         this.waveActive = false;
 
         if (this.wave >= this.totalWaves) {
+          SFX.play(this, 'sfx_victory');
           this.scene.start('GameOverScene', this.buildResultData(true));
           return;
         }
-        this.time.delayedCall(this.waveCooldown, () => this.startWave());
+        this.showWaveClearBanner(this.wave);
+        this.scheduleNextWave();
       }
     }
 

@@ -18,6 +18,7 @@ class Enemy {
 
     this.t = 0; // 0~1 경로 진행률
     this.alive = true;
+    this.isBoss = false;
 
     const start = this.path.getPoint(0);
     this.sprite = scene.add.circle(start.x, start.y, this.radius, this.color);
@@ -59,6 +60,11 @@ class Enemy {
   die() {
     if (!this.alive) return;
     this.alive = false;
+
+    FX.killBurst(this.scene, this.x, this.y, this.color, { big: this.isBoss });
+    if (this.isBoss) FX.shake(this.scene, { intensity: 0.01, duration: 400, force: true });
+    SFX.play(this.scene, 'sfx_kill');
+
     this.scene.onEnemyKilled(this);
     this.destroy();
   }

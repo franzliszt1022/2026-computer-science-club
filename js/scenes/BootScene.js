@@ -4,7 +4,13 @@ class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // 아직 이미지/사운드 없음 - 도형으로만 진행 중
+    this.load.audio('sfx_hit', 'assets/audio/hit.ogg');
+    this.load.audio('sfx_kill', 'assets/audio/kill.ogg');
+    this.load.audio('sfx_gold', 'assets/audio/gold.ogg');
+    this.load.audio('sfx_place', 'assets/audio/tower_place.ogg');
+    this.load.audio('sfx_wave_clear', 'assets/audio/wave_clear.ogg');
+    this.load.audio('sfx_victory', 'assets/audio/victory.ogg');
+    this.load.audio('sfx_gameover', 'assets/audio/gameover.ogg');
   }
 
   create() {
