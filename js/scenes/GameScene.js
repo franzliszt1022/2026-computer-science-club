@@ -20,6 +20,7 @@ class GameScene extends Phaser.Scene {
 
     this.selectedTowerType = 'basic';
 
+    drawBackground(this);
     this.buildPath();
     this.drawPath();
     this.buildUI();
@@ -38,18 +39,22 @@ class GameScene extends Phaser.Scene {
 
   drawPath() {
     const graphics = this.add.graphics();
-    graphics.lineStyle(36, 0x555b6e, 1);
+    graphics.lineStyle(42, THEME.roadEdge, 1);
+    this.path.draw(graphics, 64);
+    graphics.lineStyle(32, THEME.road, 1);
     this.path.draw(graphics, 64);
   }
 
   buildUI() {
-    this.add.rectangle(0, 0, 260, 100, 0x000000, 0.4).setOrigin(0, 0);
+    const topPanel = this.add.rectangle(0, 0, 260, 100, THEME.panel, 0.7).setOrigin(0, 0);
+    topPanel.setStrokeStyle(1, THEME.panelBorder, 0.8);
     this.goldText = this.add.text(16, 12, '', { fontSize: '20px', color: '#ffd23f' });
     this.livesText = this.add.text(16, 40, '', { fontSize: '20px', color: '#ff6b6b' });
-    this.waveText = this.add.text(16, 68, '', { fontSize: '20px', color: '#ffffff' });
+    this.waveText = this.add.text(16, 68, '', { fontSize: '20px', color: THEME.text });
 
-    this.add.rectangle(0, 570, 960, 70, 0x000000, 0.5).setOrigin(0, 0);
-    this.hintText = this.add.text(16, 578, '타워를 선택하고 배치할 위치를 클릭하세요', { fontSize: '14px', color: '#aaaaaa' });
+    const bottomPanel = this.add.rectangle(0, 570, 960, 70, THEME.panel, 0.85).setOrigin(0, 0);
+    bottomPanel.setStrokeStyle(1, THEME.panelBorder, 0.8);
+    this.hintText = this.add.text(16, 578, '타워를 선택하고 배치할 위치를 클릭하세요', { fontSize: '14px', color: THEME.textDim });
 
     this.buildTowerButtons();
     this.updateUI();
@@ -68,7 +73,10 @@ class GameScene extends Phaser.Scene {
       const bx = 320 + i * 150;
       const by = 610;
 
+      this.add.rectangle(bx + 3, by + 3, 130, 44, 0x000000, 0.3).setOrigin(0.5);
+
       const btnBg = this.add.rectangle(bx, by, 130, 44, def.color, 0.85).setOrigin(0.5);
+      btnBg.setStrokeStyle(1, 0xffffff, 0.25);
       btnBg.setInteractive({ useHandCursor: true });
       this.add.text(bx, by, `${def.name}\n${def.cost}G`, {
         fontSize: '13px', color: '#ffffff', align: 'center',
@@ -78,6 +86,7 @@ class GameScene extends Phaser.Scene {
         event.stopPropagation();
         this.selectedTowerType = type;
         this.highlightTowerButtons();
+        this.tweens.add({ targets: btnBg, scale: 0.9, duration: 60, yoyo: true });
       });
 
       this.towerButtons[type] = btnBg;
@@ -90,9 +99,9 @@ class GameScene extends Phaser.Scene {
     for (const type in this.towerButtons) {
       const btn = this.towerButtons[type];
       if (type === this.selectedTowerType) {
-        btn.setStrokeStyle(3, 0xffffff);
+        btn.setStrokeStyle(3, 0xffffff, 1);
       } else {
-        btn.setStrokeStyle(0);
+        btn.setStrokeStyle(1, 0xffffff, 0.25);
       }
     }
   }

@@ -21,8 +21,9 @@ class Enemy {
 
     const start = this.path.getPoint(0);
     this.sprite = scene.add.circle(start.x, start.y, this.radius, this.color);
+    this.sprite.setStrokeStyle(2, 0x000000, 0.35);
 
-    this.healthBarBg = scene.add.rectangle(start.x, start.y - this.radius - 10, 24, 4, 0x333333);
+    this.healthBarBg = scene.add.rectangle(start.x, start.y - this.radius - 10, 24, 4, 0x1a1a1a);
     this.healthBar = scene.add.rectangle(start.x, start.y - this.radius - 10, 24, 4, 0x2ecc71);
   }
 

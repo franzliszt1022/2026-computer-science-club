@@ -15,16 +15,20 @@ class Tower {
 
     this.cooldown = 0;
 
+    this.rangeCircle = scene.add.circle(x, y, this.range, this.color, 0.08);
+
+    this.shadow = scene.add.circle(x + 2, y + 3, 16, 0x000000, 0.35);
+    this.shadow.setScale(0);
+
     this.sprite = scene.add.circle(x, y, 16, this.color);
+    this.sprite.setStrokeStyle(2, 0xffffff, 0.5);
     this.sprite.setScale(0);
     scene.tweens.add({
-      targets: this.sprite,
+      targets: [this.sprite, this.shadow],
       scale: 1,
       duration: 200,
       ease: 'Back.Out',
     });
-
-    this.rangeCircle = scene.add.circle(x, y, this.range, this.color, 0.08);
   }
 
   get x() { return this.sprite.x; }
