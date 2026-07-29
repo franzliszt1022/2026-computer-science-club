@@ -1,6 +1,7 @@
 const Leaderboard = {
   KEY: 'defenseGameLeaderboard',
   MAX_ENTRIES: 10,
+  MAX_INITIALS_LENGTH: 10,
 
   getScores() {
     try {
@@ -21,7 +22,7 @@ const Leaderboard = {
   addScore(initials, score, wave) {
     const scores = this.getScores();
     scores.push({
-      initials: (initials || '???').toUpperCase().slice(0, 3),
+      initials: (initials || '???').toUpperCase().slice(0, this.MAX_INITIALS_LENGTH),
       score,
       wave,
     });

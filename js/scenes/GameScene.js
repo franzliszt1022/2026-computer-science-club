@@ -5,10 +5,10 @@ class GameScene extends Phaser.Scene {
 
   create() {
     this.gold = 100;
-    this.lives = 20;
+    this.lives = 12;
     this.wave = 0;
     this.kills = 0;
-    this.totalWaves = 7;
+    this.totalWaves = 10;
     this.enemies = [];
     this.towers = [];
     this.projectiles = [];

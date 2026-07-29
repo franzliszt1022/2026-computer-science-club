@@ -60,8 +60,8 @@ class GameOverScene extends Phaser.Scene {
 
     const formHtml = `
       <div style="display:flex; gap:10px; align-items:center;">
-        <input id="initials-input" type="text" maxlength="3"
-          style="width:90px; font-size:24px; text-align:center; letter-spacing:6px; text-transform:uppercase; padding:6px; border-radius:4px; border:none;" />
+        <input id="initials-input" type="text" maxlength="${Leaderboard.MAX_INITIALS_LENGTH}"
+          style="width:200px; font-size:20px; text-align:center; letter-spacing:2px; text-transform:uppercase; padding:6px; border-radius:4px; border:none;" />
         <button id="submit-btn" style="font-size:16px; padding:8px 16px; cursor:pointer; border-radius:4px; border:none; background:#ffd23f; font-weight:bold;">등록</button>
       </div>
     `;
@@ -97,7 +97,7 @@ class GameOverScene extends Phaser.Scene {
 
     const scores = Leaderboard.getScores();
     const lines = scores.length > 0
-      ? scores.map((s, i) => `${String(i + 1).padStart(2, ' ')}.  ${s.initials.padEnd(3, ' ')}   ${s.score}점  (Wave ${s.wave})`).join('\n')
+      ? scores.map((s, i) => `${String(i + 1).padStart(2, ' ')}.  ${s.initials.padEnd(Leaderboard.MAX_INITIALS_LENGTH, ' ')}   ${s.score}점  (Wave ${s.wave})`).join('\n')
       : '아직 기록이 없습니다';
 
     this.add.text(width / 2, startY + 35, lines, {
