@@ -1,3 +1,10 @@
+const ENEMY_TYPES = {
+  basic: { name: '기본', speed: 90, healthBase: 10, healthPerWave: 4, reward: 5, radius: 12, color: 0xe74c3c },
+  swarm: { name: '스웜', speed: 160, healthBase: 6, healthPerWave: 2, reward: 3, radius: 8, color: 0xf1c40f },
+  tank: { name: '탱커', speed: 55, healthBase: 40, healthPerWave: 8, reward: 12, radius: 18, color: 0x8e44ad },
+  boss: { name: '보스', speed: 40, healthBase: 300, healthPerWave: 0, reward: 100, radius: 30, color: 0x2c3e50 },
+};
+
 class Enemy {
   constructor(scene, path, config) {
     this.scene = scene;
