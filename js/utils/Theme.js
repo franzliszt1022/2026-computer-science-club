@@ -14,9 +14,9 @@ const THEME = {
 };
 
 const DIFFICULTY_PRESETS = {
-  easy: { label: '쉬움', lives: 7, gold: 150, healthMult: 0.7, scoreMult: 0.7, color: 0x2ecc71 },
-  normal: { label: '보통', lives: 4, gold: 120, healthMult: 0.85, scoreMult: 1.0, color: 0xffd23f },
-  hard: { label: '어려움', lives: 2, gold: 100, healthMult: 1.0, scoreMult: 1.5, color: 0xe74c3c },
+  easy: { label: '쉬움', lives: 7, gold: 130, healthMult: 0.85, speedMult: 1.0, scoreMult: 0.7, color: 0x2ecc71 },
+  normal: { label: '보통', lives: 4, gold: 100, healthMult: 1.0, speedMult: 1.0, scoreMult: 1.0, color: 0xffd23f },
+  hard: { label: '어려움', lives: 2, gold: 80, healthMult: 1.2, speedMult: 1.1, scoreMult: 1.5, color: 0xe74c3c },
 };
 
 function drawBackground(scene) {
