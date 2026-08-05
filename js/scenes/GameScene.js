@@ -33,6 +33,12 @@ class GameScene extends Phaser.Scene {
     this.tutorialDismissed = false;
     this.gameSpeed = 1; // 0.5 / 1 / 2 — 핵심 시뮬레이션(적 이동, 타워 쿨다운, 투사체, 스폰 타이밍)에만 적용, 트윈/딜레이콜/사운드는 실시간 유지
 
+    // UI 패널/경로 모두 이 타일 단위를 기준으로 배치 — 그리드와 시각적으로 정확히 맞물리게
+    this.tileSize = 60;
+    this.panelCols = 8;
+    this.panelRows = 3;
+    this.bottomRows = 3;
+
     SFX.init(this);
 
     drawBackground(this);
@@ -43,35 +49,60 @@ class GameScene extends Phaser.Scene {
   }
 
   buildPath() {
-    this.path = new Phaser.Curves.Path(80, 270);
-    this.path.lineTo(400, 270);
-    this.path.lineTo(400, 540);
-    this.path.lineTo(1000, 540);
-    this.path.lineTo(1000, 203);
-    this.path.lineTo(1520, 203);
-    this.path.lineTo(1520, 810);
-    this.path.lineTo(1840, 810);
+    const t = this.tileSize;
+    const toPixel = ([col, row]) => [col * t + t / 2, row * t + t / 2];
+
+    // 타일 좌표 기준 경유지 — 코너를 늘려 초크포인트/긴 직선 구간을 섞음
+    this.pathWaypoints = [
+      [1, 4], [8, 4], [8, 8], [14, 8], [14, 3],
+      [20, 3], [20, 11], [26, 11], [26, 5], [30, 5],
+    ];
+
+    const [sx, sy] = toPixel(this.pathWaypoints[0]);
+    this.path = new Phaser.Curves.Path(sx, sy);
+    for (let i = 1; i < this.pathWaypoints.length; i++) {
+      const [px, py] = toPixel(this.pathWaypoints[i]);
+      this.path.lineTo(px, py);
+    }
+
+    // 경로가 실제로 지나가는 타일 목록 (그리드 차단에 그대로 사용 — 별도 샘플링 불필요)
+    this.pathTiles = new Set();
+    for (let i = 0; i < this.pathWaypoints.length - 1; i++) {
+      let [c, r] = this.pathWaypoints[i];
+      const [c2, r2] = this.pathWaypoints[i + 1];
+      const dc = Math.sign(c2 - c);
+      const dr = Math.sign(r2 - r);
+      this.pathTiles.add(`${c},${r}`);
+      while (c !== c2 || r !== r2) {
+        c += dc;
+        r += dr;
+        this.pathTiles.add(`${c},${r}`);
+      }
+    }
   }
 
   drawPath() {
+    const t = this.tileSize;
     const graphics = this.add.graphics();
-    graphics.lineStyle(70, THEME.roadEdge, 1);
+    graphics.lineStyle(t, THEME.roadEdge, 1);
     this.path.draw(graphics, 64);
-    graphics.lineStyle(54, THEME.road, 1);
+    graphics.lineStyle(t - 10, THEME.road, 1);
     this.path.draw(graphics, 64);
   }
 
   buildUI() {
-    const topPanel = this.add.rectangle(0, 0, 440, 170, THEME.panel, 0.7).setOrigin(0, 0);
+    const panelW = this.panelCols * this.tileSize;
+    const panelH = this.panelRows * this.tileSize;
+    const topPanel = this.add.rectangle(0, 0, panelW, panelH, THEME.panel, 0.7).setOrigin(0, 0);
     topPanel.setStrokeStyle(1, THEME.panelBorder, 0.8);
     this.goldText = this.add.text(28, 20, '', { fontSize: '32px', color: '#ffd23f' });
     this.livesText = this.add.text(28, 68, '', { fontSize: '32px', color: '#ff6b6b' });
     this.waveText = this.add.text(28, 116, '', { fontSize: '24px', color: THEME.text });
 
     const { width, height } = this.scale;
-    this.fieldBottomY = height - 130;
+    this.fieldBottomY = height - this.bottomRows * this.tileSize;
 
-    const bottomPanel = this.add.rectangle(0, this.fieldBottomY, width, 130, THEME.panel, 0.85).setOrigin(0, 0);
+    const bottomPanel = this.add.rectangle(0, this.fieldBottomY, width, this.bottomRows * this.tileSize, THEME.panel, 0.85).setOrigin(0, 0);
     bottomPanel.setStrokeStyle(1, THEME.panelBorder, 0.8);
     this.hintText = this.add.text(28, this.fieldBottomY + 14, '타워를 선택하고 배치할 위치를 클릭하세요', { fontSize: '20px', color: THEME.textDim });
 
@@ -81,13 +112,114 @@ class GameScene extends Phaser.Scene {
     this.vignette.setDepth(90);
     this.vignette.setAlpha(0);
 
+    this.buildGrid();
     this.buildTowerButtons();
     this.buildSpeedButtons();
+    this.buildPlacementPreview();
     this.updateUI();
 
-    this.input.on('pointerdown', (pointer) => this.tryPlaceTower(pointer.x, pointer.y));
+    this.input.on('pointerdown', (pointer) => this.onFieldClick(pointer.x, pointer.y));
+    this.input.on('pointermove', (pointer) => this.updatePlacementPreview(pointer.x, pointer.y));
 
     this.enterPrepPhase();
+  }
+
+  buildGrid() {
+    this.blockedTiles = new Set();
+    this.towersByTile = new Map();
+
+    const { width, height } = this.scale;
+    const cols = Math.ceil(width / this.tileSize);
+    const rows = Math.ceil(height / this.tileSize);
+
+    // 좌상단 정보 패널 영역 (buildUI의 panelCols/panelRows와 동일한 값)
+    for (let c = 0; c < this.panelCols; c++) {
+      for (let r = 0; r < this.panelRows; r++) this.blockedTiles.add(`${c},${r}`);
+    }
+
+    // 하단 UI 바 영역
+    const bottomRowStart = rows - this.bottomRows;
+    for (let r = bottomRowStart; r < rows; r++) {
+      for (let c = 0; c < cols; c++) this.blockedTiles.add(`${c},${r}`);
+    }
+
+    // 경로 타일 — buildPath()에서 이미 정확히 계산해둔 목록을 그대로 사용
+    for (const key of this.pathTiles) this.blockedTiles.add(key);
+  }
+
+  buildPlacementPreview() {
+    this.previewRange = this.add.circle(0, 0, 10, 0xffffff, 0.08).setVisible(false).setDepth(40);
+    this.previewTower = this.add.circle(0, 0, 16, 0xffffff, 0.45).setVisible(false).setDepth(41);
+    this.previewTile = this.add.rectangle(0, 0, this.tileSize, this.tileSize, 0xffffff, 0)
+      .setStrokeStyle(3, THEME.success, 0.9).setVisible(false).setDepth(42);
+  }
+
+  updatePlacementPreview(x, y) {
+    this.lastPointerX = x;
+    this.lastPointerY = y;
+
+    const col = Math.floor(x / this.tileSize);
+    const row = Math.floor(y / this.tileSize);
+    const key = `${col},${row}`;
+    const cx = col * this.tileSize + this.tileSize / 2;
+    const cy = row * this.tileSize + this.tileSize / 2;
+
+    const def = TOWER_TYPES[this.selectedTowerType];
+    const valid = !this.blockedTiles.has(key) && !this.towersByTile.has(key) && this.gold >= def.cost;
+
+    this.previewRange.setPosition(cx, cy).setRadius(def.range).setFillStyle(def.color, 0.08).setVisible(true);
+    this.previewTower.setPosition(cx, cy).setFillStyle(def.color, 0.45).setVisible(true);
+    this.previewTile.setPosition(cx, cy)
+      .setStrokeStyle(3, valid ? THEME.success : THEME.danger, 0.9).setVisible(true);
+  }
+
+  hidePlacementPreview() {
+    if (this.previewRange) this.previewRange.setVisible(false);
+    if (this.previewTower) this.previewTower.setVisible(false);
+    if (this.previewTile) this.previewTile.setVisible(false);
+  }
+
+  selectTower(tower) {
+    this.hideTowerInfo();
+
+    const { width } = this.scale;
+    const panelW = 280;
+    const panelH = 220;
+    const px = Phaser.Math.Clamp(tower.x + 40, 10, width - panelW - 10);
+    const py = Phaser.Math.Clamp(tower.y - panelH / 2, this.panelRows * this.tileSize + 10, this.fieldBottomY - panelH - 10);
+
+    const def = tower.def;
+    const bg = this.add.rectangle(px, py, panelW, panelH, THEME.panel, 0.95).setOrigin(0, 0).setDepth(60);
+    bg.setStrokeStyle(2, THEME.accent, 0.9);
+
+    const lines = [
+      def.name,
+      `공격력: ${def.damage}${def.splashRadius ? ' (범위)' : ''}`,
+      `사거리: ${def.range}`,
+      `공속: 초당 ${def.fireRate}발`,
+      `비용: ${def.cost}G`,
+      `HP: ${tower.hp}/${tower.maxHp}`,
+    ];
+    const text = this.add.text(px + 20, py + 18, lines.join('\n'), {
+      fontSize: '19px', color: THEME.text, lineSpacing: 10,
+    }).setDepth(61);
+
+    const closeBtn = this.add.text(px + panelW - 34, py + 12, '✕', {
+      fontSize: '22px', color: THEME.textDim,
+    }).setInteractive({ useHandCursor: true }).setDepth(61);
+    closeBtn.on('pointerdown', (pointer, x, y, event) => {
+      event.stopPropagation();
+      this.hideTowerInfo();
+    });
+
+    this.towerInfoElements = [bg, text, closeBtn];
+  }
+
+  hideTowerInfo() {
+    if (this.towerInfoElements) {
+      this.towerInfoElements.forEach((el) => el.destroy());
+      this.towerInfoElements = null;
+    }
   }
 
   buildTowerButtons() {
@@ -113,6 +245,7 @@ class GameScene extends Phaser.Scene {
         this.selectedTowerType = type;
         this.highlightTowerButtons();
         this.tweens.add({ targets: btnBg, scale: 0.9, duration: 60, yoyo: true });
+        if (this.lastPointerX != null) this.updatePlacementPreview(this.lastPointerX, this.lastPointerY);
       });
 
       this.towerButtons[type] = btnBg;
@@ -327,20 +460,31 @@ class GameScene extends Phaser.Scene {
     this.enemies.push(enemy);
   }
 
-  tryPlaceTower(x, y) {
-    if (y > this.fieldBottomY) return; // 하단 UI 영역
+  onFieldClick(x, y) {
+    this.hideTowerInfo();
+
+    const col = Math.floor(x / this.tileSize);
+    const row = Math.floor(y / this.tileSize);
+    const key = `${col},${row}`;
+
+    if (this.towersByTile.has(key)) {
+      this.selectTower(this.towersByTile.get(key));
+      return;
+    }
+    if (this.blockedTiles.has(key)) return;
 
     const def = TOWER_TYPES[this.selectedTowerType];
     if (this.gold < def.cost) return;
 
-    for (const tower of this.towers) {
-      if (Phaser.Math.Distance.Between(tower.x, tower.y, x, y) < 32) return;
-    }
+    const cx = col * this.tileSize + this.tileSize / 2;
+    const cy = row * this.tileSize + this.tileSize / 2;
 
     this.gold -= def.cost;
-    const tower = new Tower(this, x, y, def);
+    const tower = new Tower(this, cx, cy, def);
     this.towers.push(tower);
+    this.towersByTile.set(key, tower);
     this.updateUI();
+    this.updatePlacementPreview(x, y);
 
     SFX.play(this, 'sfx_place');
     this.dismissTutorial();

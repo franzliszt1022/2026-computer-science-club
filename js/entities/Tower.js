@@ -1,17 +1,20 @@
 const TOWER_TYPES = {
-  basic: { name: '기본', cost: 20, range: 130, fireRate: 1.2, damage: 5, color: 0x3498db },
-  splash: { name: '스플래시', cost: 35, range: 110, fireRate: 0.8, damage: 4, splashRadius: 50, color: 0xe67e22 },
-  rapid: { name: '속사', cost: 30, range: 100, fireRate: 3, damage: 2, color: 0x2ecc71 },
+  basic: { name: '기본', cost: 20, range: 130, fireRate: 1.2, damage: 5, hp: 40, color: 0x3498db },
+  splash: { name: '스플래시', cost: 35, range: 110, fireRate: 0.8, damage: 4, splashRadius: 50, hp: 60, color: 0xe67e22 },
+  rapid: { name: '속사', cost: 30, range: 100, fireRate: 3, damage: 2, hp: 35, color: 0x2ecc71 },
 };
 
 class Tower {
   constructor(scene, x, y, config) {
     this.scene = scene;
+    this.def = config;
     this.range = config.range;
     this.fireRate = config.fireRate; // 초당 발사 횟수
     this.damage = config.damage;
     this.splashRadius = config.splashRadius || 0;
     this.color = config.color || 0x3498db;
+    this.maxHp = config.hp || 0;
+    this.hp = this.maxHp;
 
     this.cooldown = 0;
 
