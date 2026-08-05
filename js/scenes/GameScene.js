@@ -82,12 +82,35 @@ class GameScene extends Phaser.Scene {
   }
 
   drawPath() {
+    // Phaser Path의 stroke 렌더링은 코너에서 이음매가 어긋나 보이는 문제가 있어서
+    // 쓰지 않고, 경로가 지나가는 타일들을 직접 사각형으로 채워서 그림(항상 완전한 직각)
     const t = this.tileSize;
+    const border = 5;
     const graphics = this.add.graphics();
-    graphics.lineStyle(t, THEME.roadEdge, 1);
-    this.path.draw(graphics, 64);
-    graphics.lineStyle(t - 10, THEME.road, 1);
-    this.path.draw(graphics, 64);
+
+    graphics.fillStyle(THEME.roadEdge, 1);
+    for (const key of this.pathTiles) {
+      const [col, row] = key.split(',').map(Number);
+      graphics.fillRect(col * t, row * t, t, t);
+    }
+
+    // 도로색은 타일 안쪽을 채우되, 다른 경로 타일과 맞닿은 변은 인셋하지 않아
+    // 이음매 없이 이어지고, 바깥으로 노출된 변에만 테두리가 남게 함
+    graphics.fillStyle(THEME.road, 1);
+    for (const key of this.pathTiles) {
+      const [col, row] = key.split(',').map(Number);
+      const hasUp = this.pathTiles.has(`${col},${row - 1}`);
+      const hasDown = this.pathTiles.has(`${col},${row + 1}`);
+      const hasLeft = this.pathTiles.has(`${col - 1},${row}`);
+      const hasRight = this.pathTiles.has(`${col + 1},${row}`);
+
+      const x0 = col * t + (hasLeft ? 0 : border);
+      const x1 = (col + 1) * t - (hasRight ? 0 : border);
+      const y0 = row * t + (hasUp ? 0 : border);
+      const y1 = (row + 1) * t - (hasDown ? 0 : border);
+
+      graphics.fillRect(x0, y0, x1 - x0, y1 - y0);
+    }
   }
 
   buildUI() {
