@@ -1,7 +1,21 @@
 const TOWER_TYPES = {
-  basic: { name: '기본', cost: 20, range: 130, fireRate: 1.2, damage: 5, hp: 40, color: 0x3498db },
-  splash: { name: '스플래시', cost: 35, range: 110, fireRate: 0.8, damage: 4, splashRadius: 50, hp: 60, color: 0xe67e22 },
-  rapid: { name: '속사', cost: 30, range: 100, fireRate: 3, damage: 2, hp: 35, color: 0x2ecc71 },
+  basic: {
+    name: '기본', cost: 20, range: 130, fireRate: 1.2, damage: 5, hp: 40, color: 0x3498db,
+    desc: '무난한 단일 대상 공격 타워',
+  },
+  splash: {
+    name: '스플래시', cost: 35, range: 110, fireRate: 0.8, damage: 4, splashRadius: 50, hp: 60, color: 0xe67e22,
+    desc: '범위 안의 여러 적을 동시에 공격',
+  },
+  rapid: {
+    name: '속사', cost: 30, range: 100, fireRate: 3, damage: 2, hp: 35, color: 0x2ecc71,
+    desc: '빠른 연사로 지속딜, 한 발 데미지는 낮음',
+  },
+  frost: {
+    name: '냉기', cost: 28, range: 120, fireRate: 1, damage: 1, hp: 35,
+    slowFactor: 0.45, slowDuration: 1500, color: 0x00cec9,
+    desc: '데미지는 약하지만 적 이동속도를 크게 감소',
+  },
 };
 
 class Tower {
@@ -15,6 +29,8 @@ class Tower {
     this.color = config.color || 0x3498db;
     this.maxHp = config.hp || 0;
     this.hp = this.maxHp;
+    this.slowFactor = config.slowFactor || null;
+    this.slowDuration = config.slowDuration || 0;
 
     this.cooldown = 0;
 
@@ -64,6 +80,6 @@ class Tower {
   }
 
   shoot(target) {
-    new Projectile(this.scene, this.x, this.y, target, this.damage, this.splashRadius);
+    new Projectile(this.scene, this.x, this.y, target, this.damage, this.splashRadius, this.slowFactor, this.slowDuration);
   }
 }

@@ -138,6 +138,7 @@ class GameScene extends Phaser.Scene {
     this.buildGrid();
     this.buildTowerButtons();
     this.buildSpeedButtons();
+    this.buildPauseButton();
     this.buildPlacementPreview();
     this.updateUI();
 
@@ -305,6 +306,23 @@ class GameScene extends Phaser.Scene {
     this.highlightSpeedButtons();
   }
 
+  buildPauseButton() {
+    const { width } = this.scale;
+    const bx = width - 260;
+    const by = 36;
+
+    const btnBg = this.add.rectangle(bx, by, 56, 44, THEME.panel, 0.85).setOrigin(0.5);
+    btnBg.setStrokeStyle(1, 0xffffff, 0.25);
+    btnBg.setInteractive({ useHandCursor: true });
+    this.add.text(bx, by, '⏸', { fontSize: '22px', color: '#ffffff' }).setOrigin(0.5);
+
+    btnBg.on('pointerdown', (pointer, x, y, event) => {
+      event.stopPropagation();
+      this.scene.pause();
+      this.scene.launch('PauseMenuScene');
+    });
+  }
+
   highlightSpeedButtons() {
     for (const speed in this.speedButtons) {
       const btn = this.speedButtons[speed];
@@ -454,6 +472,11 @@ class GameScene extends Phaser.Scene {
       for (let i = 0; i < tankCount; i++) queue.push('tank');
     }
 
+    if (wave >= 4) {
+      const armoredCount = 1 + Math.floor((rampWave - 4) / 2);
+      for (let i = 0; i < armoredCount; i++) queue.push('armored');
+    }
+
     if (wave === 10) queue.push('boss'); // 중간 체크포인트 보스
 
     return this.shuffle(queue);
@@ -478,6 +501,7 @@ class GameScene extends Phaser.Scene {
       reward: def.reward,
       color: def.color,
       radius: def.radius,
+      armor: def.armor,
     });
     enemy.isBoss = type === 'boss';
     this.enemies.push(enemy);

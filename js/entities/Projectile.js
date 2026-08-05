@@ -1,9 +1,11 @@
 class Projectile {
-  constructor(scene, x, y, target, damage, splashRadius = 0) {
+  constructor(scene, x, y, target, damage, splashRadius = 0, slowFactor = null, slowDuration = 0) {
     this.scene = scene;
     this.target = target;
     this.damage = damage;
     this.splashRadius = splashRadius;
+    this.slowFactor = slowFactor;
+    this.slowDuration = slowDuration;
     this.speed = 500;
 
     this.sprite = scene.add.circle(x, y, 4, 0xffe66d);
@@ -40,6 +42,7 @@ class Projectile {
 
     for (const enemy of targets) {
       enemy.takeDamage(dmg);
+      if (this.slowFactor && enemy.alive) enemy.applySlow(this.slowFactor, this.slowDuration);
       FX.hitBurst(this.scene, enemy.x, enemy.y, enemy.color);
       DamageNumber.show(this.scene, enemy.x, enemy.y, dmg, { crit: isCrit });
     }

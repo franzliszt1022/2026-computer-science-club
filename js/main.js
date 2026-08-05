@@ -12,7 +12,7 @@ const config = {
     width: 1920,
     height: 1080,
   },
-  scene: [BootScene, MenuScene, GameScene, GameOverScene],
+  scene: [BootScene, MenuScene, GameScene, GameOverScene, SettingsScene, CodexScene, PauseMenuScene],
 };
 
 window.game = new Phaser.Game(config);

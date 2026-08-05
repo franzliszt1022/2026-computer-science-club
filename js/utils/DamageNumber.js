@@ -1,5 +1,7 @@
 const DamageNumber = {
   show(scene, x, y, amount, opts = {}) {
+    if (!Settings.get().showDamageNumbers) return;
+
     const crit = opts.crit || false;
     const text = scene.add.text(x, y, crit ? `${amount}!` : `${amount}`, {
       fontSize: crit ? '22px' : '14px',

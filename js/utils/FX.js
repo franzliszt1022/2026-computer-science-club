@@ -23,15 +23,18 @@ const FX = {
   },
 
   hitBurst(scene, x, y, color) {
+    if (!Settings.get().showEffects) return;
     this.burst(scene, x, y, color, 6, [40, 90], 300);
   },
 
   killBurst(scene, x, y, color, opts = {}) {
+    if (!Settings.get().showEffects) return;
     const big = opts.big;
     this.burst(scene, x, y, color, big ? 40 : 14, big ? [80, 220] : [50, 140], big ? 500 : 350);
   },
 
   shake(scene, opts = {}) {
+    if (!Settings.get().showEffects) return;
     const now = scene.time.now;
     if (!opts.force && now - this._lastShake < 100) return;
     this._lastShake = now;

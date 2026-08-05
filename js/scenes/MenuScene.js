@@ -43,6 +43,26 @@ class MenuScene extends Phaser.Scene {
 
     this.buildDifficultyButtons(width / 2, height / 2 + 130);
     this.buildFullscreenButton(width, height);
+    this.buildSubMenuButtons(width / 2, height / 2 + 250);
+  }
+
+  buildSubMenuButtons(cx, y) {
+    const items = [
+      ['도감', 'CodexScene'],
+      ['설정', 'SettingsScene'],
+    ];
+
+    items.forEach(([label, sceneKey], i) => {
+      const bx = cx + (i - 0.5) * 200;
+      const btn = this.add.rectangle(bx, y, 180, 60, THEME.panel, 0.85).setOrigin(0.5);
+      btn.setStrokeStyle(1, 0xffffff, 0.3);
+      btn.setInteractive({ useHandCursor: true });
+      this.add.text(bx, y, label, { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+
+      btn.on('pointerdown', () => {
+        this.scene.start(sceneKey, { returnTo: 'MenuScene' });
+      });
+    });
   }
 
   buildDifficultyButtons(centerX, y) {
