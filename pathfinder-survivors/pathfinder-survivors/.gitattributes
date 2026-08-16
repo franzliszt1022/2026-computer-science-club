@@ -1,0 +1,13 @@
+# 줄바꿈 정규화: 저장소에는 LF로, 체크아웃 시 OS에 맞게.
+* text=auto eol=lf
+
+# 배치 파일은 반드시 CRLF여야 윈도우 cmd에서 정상 동작한다.
+*.bat text eol=crlf
+
+# 아래는 바이너리라 diff/병합 대상이 아니다.
+*.png binary
+*.wav binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.ttc binary

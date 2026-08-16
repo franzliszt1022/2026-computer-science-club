@@ -1,0 +1,6 @@
+# 파이썬 3.10 이상 권장
+#   pip install -r requirements.txt
+
+pygame>=2.5,<3          # 창 생성, 렌더링, 입력, 사운드 재생
+pillow>=10.0            # gen_assets.py 가 스프라이트를 그릴 때 사용
+numpy>=1.24             # gen_sounds.py 가 효과음 파형을 합성할 때 사용

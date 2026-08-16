@@ -1,8 +1,5 @@
-.godot/
 *.tmp
 .claude/settings.local.json
 
-# Godot (legacy, not used - project moved to Phaser/web)
-/project.godot
-/scenes/
-/scripts/
+# 부원이 보내준 원본 배포 zip (압축 풀린 내용만 커밋, 원본 zip은 백업용 로컬 파일)
+pathfinder-survivors/*.zip
