@@ -20,10 +20,14 @@ OUT = (14, 16, 26, 255)          # 공통 외곽선(어두운 남색)
 WHITE = (245, 248, 255, 255)
 BLACK = (18, 18, 24, 255)
 
-P_BODY = (58, 118, 220, 255)     # 플레이어 파랑
+P_BODY = (58, 118, 220, 255)     # 1P 파랑
 P_BODY_D = (34, 74, 156, 255)
-P_SKIN = (240, 200, 160, 255)
 P_HELM = (36, 78, 158, 255)
+# 2P(협동)는 같은 모양에 색만 빨강으로 — 부원 스타일대로 외부 이미지 없이 코드로 구분한다.
+P2_BODY = (214, 66, 66, 255)
+P2_BODY_D = (150, 36, 36, 255)
+P2_HELM = (158, 40, 40, 255)
+P_SKIN = (240, 200, 160, 255)
 P_EYE = (140, 226, 255, 255)
 GUN = (96, 104, 122, 255)
 
@@ -50,30 +54,31 @@ def _save(img, name):
 
 
 # ---------------------------------------------------------------- 캐릭터
-def make_player():
-    """32x32 병사. 머리(투구+바이저) + 몸통 + 팔 + 총."""
+def make_player(body=P_BODY, body_d=P_BODY_D, helm=P_HELM, name="player1.png"):
+    """32x32 병사. 머리(투구+바이저) + 몸통 + 팔 + 총.
+    body/body_d/helm을 바꿔서 1P/2P를 같은 모양·다른 색으로 찍어낸다(협동 배치 K)."""
     img = _new(32)
     d = ImageDraw.Draw(img)
     # 다리
-    d.rectangle((11, 22, 15, 29), fill=P_BODY_D, outline=OUT)
-    d.rectangle((17, 22, 21, 29), fill=P_BODY_D, outline=OUT)
+    d.rectangle((11, 22, 15, 29), fill=body_d, outline=OUT)
+    d.rectangle((17, 22, 21, 29), fill=body_d, outline=OUT)
     # 몸통
-    d.ellipse((6, 13, 26, 27), fill=P_BODY, outline=OUT)
+    d.ellipse((6, 13, 26, 27), fill=body, outline=OUT)
     # 팔
-    d.ellipse((2, 15, 10, 23), fill=P_BODY, outline=OUT)
-    d.ellipse((22, 15, 30, 23), fill=P_BODY, outline=OUT)
+    d.ellipse((2, 15, 10, 23), fill=body, outline=OUT)
+    d.ellipse((22, 15, 30, 23), fill=body, outline=OUT)
     # 총(오른손)
     d.rectangle((24, 17, 31, 20), fill=GUN, outline=OUT)
     d.rectangle((26, 20, 28, 23), fill=GUN, outline=OUT)
     # 머리
     d.ellipse((9, 3, 23, 17), fill=P_SKIN, outline=OUT)
     # 투구
-    d.pieslice((8, 1, 24, 17), 180, 360, fill=P_HELM, outline=OUT)
-    d.rectangle((7, 8, 25, 10), fill=P_HELM, outline=OUT)
+    d.pieslice((8, 1, 24, 17), 180, 360, fill=helm, outline=OUT)
+    d.rectangle((7, 8, 25, 10), fill=helm, outline=OUT)
     # 바이저 눈
     d.rectangle((12, 12, 14, 14), fill=P_EYE)
     d.rectangle((18, 12, 20, 14), fill=P_EYE)
-    _save(img, "player.png")
+    _save(img, name)
 
 
 def make_grunt():
@@ -190,6 +195,34 @@ def make_heart():
     _save(img, "heart.png")
 
 
+def make_gear():
+    """36x36 톱니바퀴 아이콘. 인게임 설정 버튼에 쓴다(버튼이 42x42라 여유를 조금 둠)."""
+    size = 36
+    img = _new(size)
+    d = ImageDraw.Draw(img)
+    cx = cy = size / 2
+    r_outer = 9.75
+    tooth_len, tooth_w, n = 4.8, 5.1, 8
+    col = (200, 206, 222, 255)
+    for i in range(n):
+        a = math.tau * i / n
+        ox, oy = math.cos(a), math.sin(a)  # 중심→바깥 방향
+        px, py = -math.sin(a), math.cos(a)  # 그 방향에 수직(이빨 폭 방향)
+        base, tip = r_outer, r_outer + tooth_len
+        d.polygon(
+            [
+                (cx + ox * base + px * tooth_w / 2, cy + oy * base + py * tooth_w / 2),
+                (cx + ox * base - px * tooth_w / 2, cy + oy * base - py * tooth_w / 2),
+                (cx + ox * tip - px * tooth_w / 2, cy + oy * tip - py * tooth_w / 2),
+                (cx + ox * tip + px * tooth_w / 2, cy + oy * tip + py * tooth_w / 2),
+            ],
+            fill=col,
+        )
+    d.ellipse((cx - r_outer, cy - r_outer, cx + r_outer, cy + r_outer), fill=col, outline=OUT)
+    d.ellipse((cx - 3.9, cy - 3.9, cx + 3.9, cy + 3.9), fill=(18, 20, 28, 255))
+    _save(img, "gear.png")
+
+
 # ---------------------------------------------------------------- 타일
 def make_floor(seed, name):
     """32x32 바닥 타일. 가장자리에 특징을 넣지 않아 이어붙여도 티가 안 난다."""
@@ -237,14 +270,15 @@ def make_rock():
 def build(force=False):
     os.makedirs(ASSET_DIR, exist_ok=True)
     boss = os.path.join(ASSET_DIR, "enemy_boss.png")
-    if not force and os.path.exists(os.path.join(ASSET_DIR, "player.png")):
+    if not force and os.path.exists(os.path.join(ASSET_DIR, "player1.png")):
         # 예전에 만든 64px 보스가 남아 있으면 크기가 안 맞으므로 다시 그린다.
         try:
             if Image.open(boss).size == (48, 48):
                 return ASSET_DIR
         except Exception:
             pass
-    make_player()
+    make_player(P_BODY, P_BODY_D, P_HELM, "player1.png")
+    make_player(P2_BODY, P2_BODY_D, P2_HELM, "player2.png")
     make_grunt()
     make_runner()
     make_tank()
@@ -253,6 +287,7 @@ def build(force=False):
     make_orb()
     make_gem()
     make_heart()
+    make_gear()
     make_floor(1, "floor0.png")
     make_floor(3, "floor1.png")
     make_wall()

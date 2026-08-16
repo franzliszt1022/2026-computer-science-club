@@ -45,6 +45,21 @@ GAME_SPEEDS = (1.0, 1.5, 2.0)  # 인게임 배속 위젯 화살표로 순환하�
 PATH_BUDGET_PER_FRAME = 8  # 프레임당 A* 호출 상한
 FLOW_REBUILD_INTERVAL = 0.5  # flow field 갱신 주기(초)
 
+# ----------------------------------------------------------------- 협동(2P) 카메라
+COOP_ZOOM_MIN = 0.62  # 최대로 줄어드는 배율(약 1.6배 줌아웃까지만 — 너무 멀어지면 잘 안 보임)
+COOP_ZOOM_MARGIN = 220.0  # 두 플레이어의 바운딩 박스 바깥으로 남겨두는 여유(월드 픽셀)
+COOP_ZOOM_LERP = 6.0  # 줌이 바뀌는 속도(클수록 빨리 따라붙음, dt 곱해서 씀)
+
+# ----------------------------------------------------------------- 협동(2P) 난이도 배율
+# 둘이 같이 하면 화력(총/오브/오라가 각자 따로 나감)이 대략 2배가 되지만,
+# 체력 풀도 2배고 서로 흩어져서 적을 나눠 맞기 때문에 순수 2배보다는 낮게 잡는다.
+# 플레이해보고 너무 쉽거나 어려우면 이 숫자만 바꾸면 된다.
+COOP_ENEMY_COUNT_MUL = 1.6   # 웨이브당 적 수 배율
+COOP_ENEMY_HP_MUL = 1.25     # 일반 몹 체력 추가 배율(난이도별 배율 위에 곱해짐)
+COOP_ENEMY_CAP_MUL = 1.3     # 동시 생존 가능 적 상한 배율
+COOP_BOSS_HP_MUL = 1.5       # 보스는 둘을 동시에 상대해야 하니 체력을 더 올린다
+COOP_BOSS_DMG_MUL = 1.15     # 공격력은 적게만 — 텔레그래프를 두 명이 나눠 피하기 쉬워서
+
 # ------------------------------------------------------------- [ChatGPT 수정] 웨이브 난이도 튜닝
 # 한 웨이브의 적을 전부 처치해야 다음 웨이브가 시작된다.
 # 후반 웨이브는 적 수/체력/정예 비율/종류가 계속 증가하므로 사실상 무한 진행.
@@ -71,12 +86,10 @@ ELITE_CHANCE_GROWTH = 0.008  # 웨이브가 오를수록 정예 확률 증가
 SEPARATION_NEIGHBORS = 8  # 밀어내기 계산에 쓸 최대 이웃 수
 
 # ----------------------------------------------------------------- 사운드
-SFX_VOLUME = 0.55            # 효과음 전체 음량 (0.0 ~ 1.0)
+SFX_VOLUME = 0.55            # 효과음 전체 음량 기본값 (0.0~1.0, 설정 화면에서 0~100%로 조절 가능)
 SFX_CHANNELS = 24            # 동시에 날 수 있는 소리 개수
 # [ChatGPT 수정] 효과음과 별개로 관리되는 게임 배경음악.
-BGM_VOLUME = 0.30
-# [ChatGPT 수정] BGM 음량은 10% 단위로 0~100% 사이에서 조절한다.
-BGM_VOLUME_STEP = 0.10
+BGM_VOLUME = 0.30            # BGM 음량 기본값(설정 화면에서 0~100%로 조절 가능)
 BGM_FILE = os.path.join(gen_assets.ASSET_DIR, "bgm_underclocked.mp3")
 # 소리별 (개별 음량, 최소 재생 간격 초).
 # 총알처럼 초당 수십 번 나는 소리는 간격을 두지 않으면 귀가 아프고
@@ -248,6 +261,7 @@ TEXT = {
         "menu_settings": "설정",
         "menu_leaderboard": "리더보드",
         "coming_soon": "준비 중",
+        "coop_hint": "P1: WASD 이동   ·   P2: 방향키 이동",
         "difficulty": "난이도를 선택하세요",
         "difficulty_hint": "1 쉬움   ·   2 보통   ·   3 어려움   ·   4 매우 어려움",
         "easy": "쉬움",
@@ -277,6 +291,13 @@ TEXT = {
         "bgm_off": "BGM 끔",
         # [ChatGPT 수정] BGM 전용 음량 조절 표시.
         "bgm_volume": "BGM 음량",
+        "sfx_volume": "효과음 음량",
+        "damage_numbers": "데미지 표시",
+        "enemy_hp_bars": "몬스터 체력바",
+        "settings": "설정",
+        "close": "닫기",
+        "on": "켬",
+        "off": "끔",
         "survived": "생존 시간",
         "restart": "R 을 눌러 다시 시작",
         "home": "H 를 눌러 홈으로",
@@ -292,6 +313,7 @@ TEXT = {
         "menu_settings": "SETTINGS",
         "menu_leaderboard": "LEADERBOARD",
         "coming_soon": "COMING SOON",
+        "coop_hint": "P1: WASD move  ·  P2: Arrow keys move",
         "difficulty": "SELECT DIFFICULTY",
         "difficulty_hint": "1 EASY   ·   2 NORMAL   ·   3 HARD   ·   4 VERY HARD",
         "easy": "EASY",
@@ -321,6 +343,13 @@ TEXT = {
         "bgm_off": "BGM OFF",
         # [ChatGPT 수정] BGM-only volume control label.
         "bgm_volume": "BGM VOLUME",
+        "sfx_volume": "SFX VOLUME",
+        "damage_numbers": "DAMAGE NUMBERS",
+        "enemy_hp_bars": "ENEMY HP BARS",
+        "settings": "SETTINGS",
+        "close": "CLOSE",
+        "on": "ON",
+        "off": "OFF",
         "survived": "SURVIVED",
         "restart": "PRESS R TO RESTART",
         "home": "PRESS H TO RETURN HOME",
@@ -506,6 +535,10 @@ class Audio:
         # [ChatGPT 수정] BGM 음량은 효과음과 별도로 기억한다.
         self.bgm_volume = BGM_VOLUME
         self.bgm_loaded = False
+        # 설정 화면의 효과음 슬라이더(0.0~1.0)용. 각 소리의 개별 균형(SFX_TABLE의 vol)은
+        # 그대로 두고 여기에만 곱해서 전체 크기를 조절한다.
+        self.sfx_volume = SFX_VOLUME
+        self.sound_base_vol = {}
         self.sounds = {}
         self.last = {}
 
@@ -518,7 +551,8 @@ class Audio:
                 f = os.path.join(path, name + ".wav")
                 if os.path.exists(f):
                     snd = pygame.mixer.Sound(f)
-                    snd.set_volume(vol * SFX_VOLUME)
+                    snd.set_volume(vol * self.sfx_volume)
+                    self.sound_base_vol[name] = vol
                     self.sounds[name] = snd
             self.ok = bool(self.sounds)
         except Exception as ex:                      # 오디오 장치 없음 등
@@ -579,16 +613,23 @@ class Audio:
             pass
         return self.bgm_muted
 
-    # [ChatGPT 수정] BGM만 10% 단위로 올리거나 내린다. 효과음 크기는 건드리지 않는다.
-    def step_bgm_volume(self, direction):
-        delta = BGM_VOLUME_STEP if direction == "inc" else -BGM_VOLUME_STEP
-        self.bgm_volume = clamp(round(self.bgm_volume + delta, 2), 0.0, 1.0)
+    def set_bgm_volume(self, volume):
+        """설정 화면 슬라이더에서 호출 — BGM 음량을 0.0~1.0 사이 임의 값으로 바로 지정한다."""
+        self.bgm_volume = clamp(volume, 0.0, 1.0)
         try:
             if pygame.mixer.get_init() is not None:
                 pygame.mixer.music.set_volume(0.0 if self.bgm_muted else self.bgm_volume)
         except Exception:
             pass
         return self.bgm_volume
+
+    def set_sfx_volume(self, volume):
+        """설정 화면 슬라이더에서 호출 — 효과음 전체 음량을 0.0~1.0 사이로 지정한다.
+        소리별 개별 균형(sound_base_vol)은 유지한 채 여기에만 곱한다."""
+        self.sfx_volume = clamp(volume, 0.0, 1.0)
+        for name, snd in self.sounds.items():
+            snd.set_volume(self.sound_base_vol.get(name, 1.0) * self.sfx_volume)
+        return self.sfx_volume
 
 
 class SpatialHash:
@@ -724,6 +765,8 @@ class Enemy:
         # [ChatGPT 수정] 보스 전용 원거리 공격 쿨타임.
         "boss_shot_t",
         "stuck_n",
+        # 협동(배치 K)에서 이 개체가 쫓고 있는 self.players의 인덱스.
+        "target_pi",
     )
 
     def __init__(
@@ -766,6 +809,7 @@ class Enemy:
         self.stuck_n = 0  # 연속으로 끼임이 감지된 횟수
         # [ChatGPT 수정] 보스는 등장 직후 즉발하지 않고 잠깐 뒤부터 총알을 발사한다.
         self.boss_shot_t = random.uniform(0.9, 1.4) if kind == "boss" else 9999.0
+        self.target_pi = 0  # update_enemies()가 매 프레임 가장 가까운 살아있는 플레이어로 갱신
 
 
 class Boss(Enemy):
@@ -916,11 +960,24 @@ class Game:
         self.difficulty_buttons = []
         self.menu_buttons = []
         self.speed_widget_buttons = []
-        # [ChatGPT 수정] BGM 전용 클릭 버튼은 배속 버튼과 별도 히트박스를 가진다.
-        self.bgm_button = None
-        # [ChatGPT 수정] BGM 음량 좌/우 버튼 히트박스.
-        self.bgm_volume_buttons = []
         self.game_speed = 1.0
+        # 인게임 설정 화면(톱니바퀴 버튼) — ESC/일시정지와는 완전히 별개의 상태.
+        self.gear_button = None
+        self.settings_buttons = []
+        self.settings_sliders = {}  # {"bgm": pygame.Rect, "sfx": pygame.Rect} — 클릭/드래그 판정용
+        self.dragging_slider = None  # 마우스 왼쪽 버튼을 누른 채 끌고 있는 슬라이더 id
+        self.show_damage_numbers = True  # 판이 바뀌어도 유지되는 설정이라 reset()이 아니라 여기서 초기화
+        self.show_enemy_hp_bars = True  # 몬스터 머리 위 체력바 표시 여부(마찬가지로 세션 내내 유지)
+        # 로컬 협동(배치 K) — 메인 메뉴에서 "협동"을 고르면 2로 바뀐다. reset()이 이 값을
+        # 읽어서 self.players를 몇 명 만들지 정한다.
+        self.num_players = 1
+        # 2P가 멀리 떨어지면 줌아웃해서 그리는 데 쓰는 임시 캔버스. 필요한 크기가
+        # 바뀔 때만 다시 만들면 되므로 게임판이 새로 시작해도(reset) 그대로 재사용한다.
+        self.world_surf = None
+        # --selftest 전용: "1p"(기본) 또는 "2p" — main()이 두 번째 헤드리스 실행에서
+        # "2p"로 바꿔서 협동 메뉴 클릭 경로까지 자동으로 지나가게 한다.
+        self.selftest_mode = "1p"
+        self._auto_dirs = []  # auto_play()가 플레이어마다 따로 굴리는 무작위 이동 방향
         self.reset()
 
     # ------------------------------------------------------ [ChatGPT 수정] 전체화면
@@ -1110,7 +1167,6 @@ class Game:
         self.grid = self.build_map()
         self.bg, self.bg_obst = self.render_background()
         self.minimap_bg = self.render_minimap()
-        self.flow = FlowField(self.grid)
         self.flow_timer = 0.0
 
         sx, sy = self.grid.tile_center(MAP_W // 2, MAP_H // 2)
@@ -1120,7 +1176,25 @@ class Game:
         self.enemy_hp_mul = diff["enemy_hp_mul"]
         self.enemy_speed_mul = diff["enemy_speed_mul"]
         self.enemy_damage_mul = diff["enemy_damage_mul"]
-        self.player = Player(sx, sy, diff["hp"], diff["xp_mul"])
+        self.players = [Player(sx, sy, diff["hp"], diff["xp_mul"])]
+        if self.num_players > 1:
+            # 지도 중앙(1P 자리) 바로 옆 타일에 2P를 놓되, 벽이면 nearest_walkable로
+            # 근처 빈 칸을 찾는다 — 두 플레이어가 겹쳐서 시작하지 않게.
+            spot = self.grid.nearest_walkable(MAP_W // 2 + 1, MAP_H // 2, 6, 12.0)  # Player.r과 맞춘 반지름
+            sx2, sy2 = self.grid.tile_center(*spot) if spot else (sx, sy)
+            self.players.append(Player(sx2, sy2, diff["hp"], diff["xp_mul"]))
+        # 아직 self.players로 옮기지 못한 코드(적 AI 타겟팅, HUD, 게임오버 등, 배치 K2~K5에서
+        # 순차적으로 정리)가 참조할 임시 별칭. players[0]과 항상 같은 객체를 가리키므로
+        # 어느 쪽으로 값을 바꿔도 서로 어긋나지 않는다. K5가 끝나면 삭제한다.
+        self.player = self.players[0]
+        # 적 대체 경로(flow field)는 목표점이 하나뿐이라 플레이어 수만큼 따로 둔다 —
+        # 안 그러면 한쪽 플레이어 근처의 적들이 대체 경로를 아예 못 받는다.
+        self.flows = [FlowField(self.grid) for _ in self.players]
+        self.levelup_queue = []  # 동시에 여러 명이 레벨업하면 순서대로 처리
+        self.levelup_player = 0  # 지금 레벨업 화면이 누구 것인지
+        self.cam_zoom = 1.0  # 협동 카메라 줌 배율(1인이면 항상 1.0으로 고정됨)
+        # 동시 생존 적 상한도 인원수에 맞춰 늘린다(그래야 늘어난 스폰 수가 상한에 막히지 않는다).
+        self.enemy_cap = round(ENEMY_CAP * (COOP_ENEMY_CAP_MUL if self.num_players > 1 else 1.0))
         self.enemies = []
         self.bullets = []
         # [ChatGPT 수정] 보스 탄환은 플레이어 총알과 별도 관리한다.
@@ -1141,7 +1215,9 @@ class Game:
         self.wave_spawned = 0
         self.wave_banner = (f"{self.T['wave']} {self.wave}", WAVE_INTRO_TIME)
         self.shake = 0.0
-        self.banner = ("", 0.0)
+        # 협동 모드로 시작할 때만 조작 안내를 잠깐 띄운다 — 부스 방문객이 둘이 바로
+        # 앉아서 헷갈리지 않게.
+        self.banner = (self.T["coop_hint"], 2.5) if self.num_players > 1 else ("", 0.0)
         self.choices = []
         self.path_calls = 0
         self.path_calls_shown = 0
@@ -1152,12 +1228,16 @@ class Game:
         self.terrain_t = 0.0
         self.terrain_alpha = 1.0
         self.boss_active = False
-        self.flow.rebuild(self.grid.world_to_tile(sx, sy))
+        for pl, flow in zip(self.players, self.flows):
+            flow.rebuild(self.grid.world_to_tile(pl.x, pl.y))
 
     # ------------------------------------------------------ [ChatGPT 수정] 웨이브 / 스폰
     def wave_enemy_count(self, wave):
-        """웨이브가 올라갈수록 적 수가 선형으로 증가한다."""
-        return WAVE_BASE_ENEMIES + (wave - 1) * WAVE_ENEMY_GROWTH
+        """웨이브가 올라갈수록 적 수가 선형으로 증가한다. 협동이면 인원수만큼 더 늘린다."""
+        n = WAVE_BASE_ENEMIES + (wave - 1) * WAVE_ENEMY_GROWTH
+        if len(self.players) > 1:
+            n = round(n * COOP_ENEMY_COUNT_MUL)
+        return n
 
     def wave_kind_weights(self, wave):
         """웨이브별 몬스터 구성비.
@@ -1239,7 +1319,7 @@ class Game:
             while (
                 self.wave_spawn_timer <= 0
                 and self.wave_queue
-                and len(self.enemies) < ENEMY_CAP
+                and len(self.enemies) < self.enemy_cap
             ):
                 kind, elite = self.wave_queue.pop()
                 self.spawn(kind, elite)
@@ -1273,17 +1353,22 @@ class Game:
 
     def spawn(self, kind, elite=False):
         """화면 밖 원주 위에서 균등한 각도로 등장.
-        θ ~ U[0, 2π), r = 상수 → 플레이어를 중심으로 한 원 위의 균등분포."""
-        p = self.player
+        θ ~ U[0, 2π), r = 상수 → 플레이어(들)를 중심으로 한 원 위의 균등분포.
+        협동이면 살아있는 플레이어들의 중점을 중심으로 삼는다 — 안 그러면(예전처럼
+        P1만 중심) 적이 항상 P1 근처에서만 새로 생기고 P2 쪽은 계속 비게 된다."""
+        ps = self.alive_players()
+        mx = sum(pl.x for pl in ps) / len(ps)
+        my = sum(pl.y for pl in ps) / len(ps)
         # 플레이 시간이 아니라 웨이브를 기준으로 강해져서, 천천히 플레이해도 난이도가 튀지 않는다.
         scale = (1.0 + WAVE_HP_GROWTH) ** (self.wave - 1)
         # 공격력은 웨이브에 선형으로만 올린다(복리면 후반에 한 방 컷이 된다)
         dmg_mul = self.enemy_damage_mul * (1.0 + WAVE_DMG_GROWTH * (self.wave - 1))
+        coop = len(self.players) > 1
         for _ in range(12):
             a = random.uniform(0, math.tau)
             rad = random.uniform(620, 760)
-            x = clamp(p.x + math.cos(a) * rad, TILE, WORLD_W - TILE)
-            y = clamp(p.y + math.sin(a) * rad, TILE, WORLD_H - TILE)
+            x = clamp(mx + math.cos(a) * rad, TILE, WORLD_W - TILE)
+            y = clamp(my + math.sin(a) * rad, TILE, WORLD_H - TILE)
             tx, ty = self.grid.world_to_tile(x, y)
             spot = self.grid.nearest_walkable(tx, ty, 6, ENEMY_TYPES[kind]["r"])
             if spot:
@@ -1291,18 +1376,21 @@ class Game:
                 if kind == "boss":
                     # 등장 회차 = 단계. 5웨이브마다 나오므로 wave//BOSS_EVERY.
                     tier = max(1, self.wave // BOSS_EVERY)
+                    hp_mul = self.enemy_hp_mul * (COOP_BOSS_HP_MUL if coop else 1.0)
+                    boss_dmg_mul = dmg_mul * (COOP_BOSS_DMG_MUL if coop else 1.0)
                     self.enemies.append(
                         Boss(
                             wx,
                             wy,
                             scale,
                             tier,
-                            self.enemy_hp_mul,
+                            hp_mul,
                             self.enemy_speed_mul,
-                            dmg_mul,
+                            boss_dmg_mul,
                         )
                     )
                 else:
+                    hp_mul = self.enemy_hp_mul * (COOP_ENEMY_HP_MUL if coop else 1.0)
                     self.enemies.append(
                         Enemy(
                             kind,
@@ -1310,7 +1398,7 @@ class Game:
                             wy,
                             scale,
                             elite,
-                            self.enemy_hp_mul,
+                            hp_mul,
                             self.enemy_speed_mul,
                             dmg_mul,
                         )
@@ -1319,46 +1407,57 @@ class Game:
 
     # ------------------------------------------------------ 업데이트
     def update(self, dt, keys):
-        p = self.player
         self.time += dt
         self.shake = max(0.0, self.shake - dt * 26)
 
         # --- 입력/이동
-        mx = (keys[pygame.K_d] or keys[pygame.K_RIGHT]) - (
-            keys[pygame.K_a] or keys[pygame.K_LEFT]
-        )
-        my = (keys[pygame.K_s] or keys[pygame.K_DOWN]) - (
-            keys[pygame.K_w] or keys[pygame.K_UP]
-        )
-        # [ChatGPT 수정] 대각선(W+A, W+D 등)에서도 X/Y축 속도를 깎지 않는다.
-        # 기존 정규화는 대각선에서 각 축을 약 70.7%로 줄였기 때문에 체감상 느리게 느껴질 수 있었다.
-        if mx:
-            p.facing = 1 if mx > 0 else -1
-        prev_x, prev_y = p.x, p.y
-        move_and_collide(self.grid, p, mx * p.speed * dt, my * p.speed * dt)
-        # 보스의 요격 예측에 쓸 '실제' 이동 속도.
-        # 입력 방향이 아니라 벽에 막힌 결과까지 반영된 변위로 구하고,
-        # 지수이동평균으로 흔들림을 눌러 준다(값이 튀면 예측이 춤춘다).
-        if dt > 1e-6:
-            ivx, ivy = (p.x - prev_x) / dt, (p.y - prev_y) / dt
-            k = min(1.0, 8.0 * dt)
-            p.mvx += (ivx - p.mvx) * k
-            p.mvy += (ivy - p.mvy) * k
+        # 혼자면(1P) 기존처럼 WASD와 방향키를 둘 다 그 한 명에게 준다 — 원래 조작감을
+        # 그대로 유지해야 하므로. 협동(2P)일 때만 1P=WASD / 2P=방향키로 나눈다.
+        coop = len(self.players) > 1
+        for i, pl in enumerate(self.players):
+            if pl.hp <= 0:
+                continue  # 쓰러진 플레이어는 조작 불가 — 나머지 한 명은 계속 진행
+            if coop and i == 1:
+                mx = keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]
+                my = keys[pygame.K_DOWN] - keys[pygame.K_UP]
+            elif coop:
+                mx = keys[pygame.K_d] - keys[pygame.K_a]
+                my = keys[pygame.K_s] - keys[pygame.K_w]
+            else:
+                mx = (keys[pygame.K_d] or keys[pygame.K_RIGHT]) - (keys[pygame.K_a] or keys[pygame.K_LEFT])
+                my = (keys[pygame.K_s] or keys[pygame.K_DOWN]) - (keys[pygame.K_w] or keys[pygame.K_UP])
+            # [ChatGPT 수정] 대각선(W+A, W+D 등)에서도 X/Y축 속도를 깎지 않는다.
+            # 기존 정규화는 대각선에서 각 축을 약 70.7%로 줄였기 때문에 체감상 느리게 느껴질 수 있었다.
+            if mx:
+                pl.facing = 1 if mx > 0 else -1
+            prev_x, prev_y = pl.x, pl.y
+            move_and_collide(self.grid, pl, mx * pl.speed * dt, my * pl.speed * dt)
+            # 보스의 요격 예측에 쓸 '실제' 이동 속도.
+            # 입력 방향이 아니라 벽에 막힌 결과까지 반영된 변위로 구하고,
+            # 지수이동평균으로 흔들림을 눌러 준다(값이 튀면 예측이 춤춘다).
+            if dt > 1e-6:
+                ivx, ivy = (pl.x - prev_x) / dt, (pl.y - prev_y) / dt
+                k = min(1.0, 8.0 * dt)
+                pl.mvx += (ivx - pl.mvx) * k
+                pl.mvy += (ivy - pl.mvy) * k
 
-        p.iframe = max(0.0, p.iframe - dt)
-        if p.regen:
-            p.hp = min(p.max_hp, p.hp + p.regen * dt)
+            pl.iframe = max(0.0, pl.iframe - dt)
+            if pl.regen:
+                pl.hp = min(pl.max_hp, pl.hp + pl.regen * dt)
+
+        self.update_camera_zoom(dt)
 
         # --- 공간 해시 재구성
         self.hash.clear()
         for e in self.enemies:
             self.hash.add(e)
 
-        # --- flow field 갱신 (A* 예산 초과 시의 대체 경로)
+        # --- flow field 갱신 (A* 예산 초과 시의 대체 경로) — 플레이어마다 하나씩
         self.flow_timer -= dt
         if self.flow_timer <= 0:
             self.flow_timer = FLOW_REBUILD_INTERVAL
-            self.flow.rebuild(self.grid.world_to_tile(p.x, p.y))
+            for pl, flow in zip(self.players, self.flows):
+                flow.rebuild(self.grid.world_to_tile(pl.x, pl.y))
 
         self.update_enemies(dt)
         # [ChatGPT 수정] 보스가 발사한 탄환의 이동/벽 충돌/플레이어 피격을 처리한다.
@@ -1394,22 +1493,49 @@ class Game:
             self.banner = (self.banner[0], self.banner[1] - dt)
         if self.wave_banner[1] > 0:
             self.wave_banner = (self.wave_banner[0], self.wave_banner[1] - dt)
-        if p.hp <= 0:
+        # 부활 없음 — 전원(1인이면 그 한 명)이 쓰러져야 게임오버. 한 명만 쓰러지면
+        # 남은 한 명이 계속 진행한다(위 입력 루프가 쓰러진 쪽을 건너뛰어 처리).
+        if all(pl.hp <= 0 for pl in self.players):
             if self.state != "over":
                 self.audio.play("gameover")
             self.state = "over"
 
+    def alive_players(self):
+        """쓰러지지 않은 플레이어 목록. 전원 쓰러졌으면(그 프레임 게임오버 처리 직전)
+        0으로 나누기 등을 피하려고 그냥 전체 목록을 돌려준다."""
+        alive = [p for p in self.players if p.hp > 0]
+        return alive if alive else self.players
+
+    def nearest_player_index(self, x, y):
+        """(x,y)에서 가장 가까운, 아직 살아있는 플레이어의 self.players 인덱스.
+        전원 쓰러졌으면 None(그 프레임은 게임오버 처리로 넘어간다)."""
+        best, bd = None, 1e18
+        for i, pl in enumerate(self.players):
+            if pl.hp <= 0:
+                continue
+            d2 = (pl.x - x) ** 2 + (pl.y - y) ** 2
+            if d2 < bd:
+                best, bd = i, d2
+        return best
+
     # ---------------- 적 AI (여기가 A* 파트) ----------------
     def update_enemies(self, dt):
-        p = self.player
         grid = self.grid
         budget = PATH_BUDGET_PER_FRAME
-        ptile = grid.world_to_tile(p.x, p.y)
 
         for e in self.enemies:
             e.flash = max(0.0, e.flash - dt)
             e.hit_cd = max(0.0, e.hit_cd - dt)
             e.repath_t -= dt
+
+            # 협동(2P)이면 매 프레임 가장 가까운 살아있는 플레이어를 다시 고른다.
+            # 혼자면 항상 인덱스 0이라 아래 로직은 지금까지와 완전히 동일하게 동작한다.
+            pi = self.nearest_player_index(e.x, e.y)
+            if pi is None:
+                continue  # 전원 쓰러짐 — 이번 프레임은 게임오버 처리로 넘어간다
+            e.target_pi = pi
+            p = self.players[pi]
+            ptile = grid.world_to_tile(p.x, p.y)
 
             dx, dy = p.x - e.x, p.y - e.y
             dist = math.hypot(dx, dy)
@@ -1485,8 +1611,8 @@ class Game:
                     ndx, ndy, _ = norm(wx - e.x, wy - e.y)
                     desired = (ndx, ndy)
                 else:
-                    # 4) 예산 초과 등으로 경로가 없으면 flow field 방향 사용
-                    fd = self.flow.direction(*grid.world_to_tile(e.x, e.y))
+                    # 4) 예산 초과 등으로 경로가 없으면 flow field 방향 사용(쫓는 대상의 필드)
+                    fd = self.flows[pi].direction(*grid.world_to_tile(e.x, e.y))
                     desired = fd if fd else (dx / max(dist, 1e-6), dy / max(dist, 1e-6))
 
             # 5) 분리(separation) 조향: 서로 겹쳐 한 점에 뭉치는 걸 막는다
@@ -1520,14 +1646,20 @@ class Game:
                 e.facing = 1 if e.vx > 0 else -1
             move_and_collide(self.grid, e, e.vx * dt, e.vy * dt)
 
-            # 6) 플레이어 접촉 피해
-            if dist < e.r + p.r and p.iframe <= 0:
-                self.audio.play("hurt")
-                p.hp -= e.dmg
-                p.iframe = 0.55
-                self.shake = max(self.shake, 7.0)
-                for _ in range(8):
-                    self.particles.append(Particle(p.x, p.y, C_HP))
+            # 6) 플레이어 접촉 피해 — 쫓는 대상뿐 아니라, 옆에 서 있던 다른 플레이어도
+            # 부딪히면 맞아야 한다("최근접"이 아니라 "닿은 사람 전원" 검사).
+            for op in self.players:
+                if op.hp <= 0:
+                    continue
+                odx, ody = op.x - e.x, op.y - e.y
+                odist = math.hypot(odx, ody)
+                if odist < e.r + op.r and op.iframe <= 0:
+                    self.audio.play("hurt")
+                    op.hp -= e.dmg
+                    op.iframe = 0.55
+                    self.shake = max(self.shake, 7.0)
+                    for _ in range(8):
+                        self.particles.append(Particle(op.x, op.y, C_HP))
 
 
     # ---------------- 보스전 지형 ----------------
@@ -1540,7 +1672,8 @@ class Game:
         for tx, ty in self.obstacle_tiles:
             self.grid.set_solid(tx, ty, 1 if on else 0)
         self.grid.build_clearance()
-        self.flow.rebuild(self.grid.world_to_tile(self.player.x, self.player.y))
+        for pl, flow in zip(self.players, self.flows):
+            flow.rebuild(self.grid.world_to_tile(pl.x, pl.y))
         for e in self.enemies:
             e.path = None
             e.repath_t = 0.0
@@ -1552,10 +1685,12 @@ class Game:
         전부 뿌리면 파티클이 수백 개라 프레임이 튀므로,
         화면 근처 타일만 골라 최대 90개까지만 만든다.
         """
-        p = self.player
+        ps = self.alive_players()
+        mx = sum(pl.x for pl in ps) / len(ps)
+        my = sum(pl.y for pl in ps) / len(ps)
         near = [
             t for t in self.obstacle_tiles
-            if abs(t[0] * TILE - p.x) < SW * 0.7 and abs(t[1] * TILE - p.y) < SH * 0.7
+            if abs(t[0] * TILE - mx) < SW * 0.7 and abs(t[1] * TILE - my) < SH * 0.7
         ]
         random.shuffle(near)
         for tx, ty in near[:90]:
@@ -1565,7 +1700,7 @@ class Game:
 
     def relocate_out_of_walls(self):
         """지형이 돌아왔을 때 벽 속에 갇힌 대상을 가장 가까운 빈칸으로 빼낸다."""
-        for ent in [self.player] + self.enemies:
+        for ent in list(self.players) + self.enemies:
             tx, ty = self.grid.world_to_tile(ent.x, ent.y)
             if not self.grid.is_solid(tx, ty):
                 continue
@@ -1625,8 +1760,12 @@ class Game:
           · 멀면  : 요격점(예측 위치)으로 접근      → 플레이어의 도주 방향을 가로막음
           · 가까우면: 후퇴                          → 근접에서 두들겨 맞는 걸 피함
           · 중간이면: 선회(strafe)                  → 사거리를 유지하며 옆으로 돌기
+
+        dist/dx/dy는 update_enemies()가 이미 e.target_pi 기준으로 계산해서 넘겨주므로,
+        여기서도 반드시 같은 대상(self.players[e.target_pi])을 써야 한다 — 안 그러면
+        "쫓는 사람과 조준하는 사람이 다른" 버그가 생긴다.
         """
-        p = self.player
+        p = self.players[e.target_pi]
         grid = self.grid
         e.state_t -= dt
         e.atk_cd -= dt
@@ -1726,7 +1865,7 @@ class Game:
         st = ENEMY_TYPES[kind]
         made = 0
         for _ in range(n):
-            if len(self.enemies) >= ENEMY_CAP + 12:
+            if len(self.enemies) >= self.enemy_cap + 12:
                 break
             a = random.uniform(0, math.tau)
             d = random.uniform(55, 95)
@@ -1747,7 +1886,6 @@ class Game:
 
     def boss_attack(self, e):
         """예비동작이 끝난 순간 실제로 공격을 발사한다."""
-        p = self.player
         dmg = max(8.0, e.dmg * 0.45)
         lx, ly = e.lock_x, e.lock_y
 
@@ -1796,54 +1934,56 @@ class Game:
         return best
 
     def update_weapons(self, dt):
-        p = self.player
-        # 자동 조준 사격
-        p.gun_timer -= dt
-        if p.gun_timer <= 0:
-            tgt = self.nearest_enemy(p.x, p.y, p.gun_range)
-            if tgt:
-                p.gun_timer = p.gun_cd
-                base = math.atan2(tgt.y - p.y, tgt.x - p.x)
-                spread = 0.16
-                for i in range(p.gun_count):
-                    a = base + (i - (p.gun_count - 1) / 2) * spread
-                    self.audio.play("shoot")
-                    self.bullets.append(
-                        Bullet(
-                            p.x,
-                            p.y,
-                            math.cos(a) * 800,
-                            math.sin(a) * 800,
-                            p.gun_dmg,
-                            p.gun_pierce,
+        # 협동이면 두 플레이어가 각자 자기 총/오브/오라를 독립적으로 굴린다.
+        for p in self.players:
+            if p.hp <= 0:
+                continue  # 쓰러진 플레이어는 공격도 멈춘다
+            # 자동 조준 사격
+            p.gun_timer -= dt
+            if p.gun_timer <= 0:
+                tgt = self.nearest_enemy(p.x, p.y, p.gun_range)
+                if tgt:
+                    p.gun_timer = p.gun_cd
+                    base = math.atan2(tgt.y - p.y, tgt.x - p.x)
+                    spread = 0.16
+                    for i in range(p.gun_count):
+                        a = base + (i - (p.gun_count - 1) / 2) * spread
+                        self.audio.play("shoot")
+                        self.bullets.append(
+                            Bullet(
+                                p.x,
+                                p.y,
+                                math.cos(a) * 800,
+                                math.sin(a) * 800,
+                                p.gun_dmg,
+                                p.gun_pierce,
+                            )
                         )
-                    )
-        # 궤도 오브
-        if p.orbs:
-            p.orb_angle += dt * 2.6
-            for i in range(p.orbs):
-                a = p.orb_angle + math.tau * i / p.orbs
-                ox, oy = p.x + math.cos(a) * 76, p.y + math.sin(a) * 76
-                for e in self.hash.query(ox, oy, 22):
-                    if (
-                        e.hit_cd <= 0
-                        and (e.x - ox) ** 2 + (e.y - oy) ** 2 < (e.r + 12) ** 2
-                    ):
-                        e.hit_cd = 0.35
-                        self.damage(e, p.orb_dmg)
-        # 전격 장판
-        if p.aura_lv:
-            p.aura_timer -= dt
-            if p.aura_timer <= 0:
-                p.aura_timer = 0.4
-                rad = p.aura_radius
-                for e in self.hash.query(p.x, p.y, rad):
-                    if (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < rad * rad:
-                        self.damage(e, p.aura_dps * 0.4, silent=True)
+            # 궤도 오브
+            if p.orbs:
+                p.orb_angle += dt * 2.6
+                for i in range(p.orbs):
+                    a = p.orb_angle + math.tau * i / p.orbs
+                    ox, oy = p.x + math.cos(a) * 76, p.y + math.sin(a) * 76
+                    for e in self.hash.query(ox, oy, 22):
+                        if (
+                            e.hit_cd <= 0
+                            and (e.x - ox) ** 2 + (e.y - oy) ** 2 < (e.r + 12) ** 2
+                        ):
+                            e.hit_cd = 0.35
+                            self.damage(e, p.orb_dmg)
+            # 전격 장판
+            if p.aura_lv:
+                p.aura_timer -= dt
+                if p.aura_timer <= 0:
+                    p.aura_timer = 0.4
+                    rad = p.aura_radius
+                    for e in self.hash.query(p.x, p.y, rad):
+                        if (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < rad * rad:
+                            self.damage(e, p.aura_dps * 0.4, silent=True)
 
     # [ChatGPT 수정] 보스 탄환 처리. 플레이어의 무적 시간은 기존 접촉 피해와 공유한다.
     def update_boss_bullets(self, dt):
-        p = self.player
         alive = []
         for b in self.boss_bullets:
             b.x += b.vx * dt
@@ -1858,15 +1998,24 @@ class Game:
                     self.particles.append(Particle(b.x, b.y, (190, 90, 235), 2, 90))
                 continue
 
-            if (p.x - b.x) ** 2 + (p.y - b.y) ** 2 < (p.r + b.r) ** 2:
-                if p.iframe <= 0:
-                    self.audio.play("hurt")
-                    p.hp -= b.dmg
-                    p.iframe = 0.55
-                    self.shake = max(self.shake, 8.0)
-                    self.texts.append(FloatText(p.x, p.y - p.r - 8, f"-{int(b.dmg)}", C_HP))
-                    for _ in range(10):
-                        self.particles.append(Particle(p.x, p.y, C_HP))
+            # 원래 노리던 대상이 아니어도, 탄환 경로에 서 있던 다른 플레이어면 맞는다.
+            hit = False
+            for p in self.players:
+                if p.hp <= 0:
+                    continue
+                if (p.x - b.x) ** 2 + (p.y - b.y) ** 2 < (p.r + b.r) ** 2:
+                    hit = True
+                    if p.iframe <= 0:
+                        self.audio.play("hurt")
+                        p.hp -= b.dmg
+                        p.iframe = 0.55
+                        self.shake = max(self.shake, 8.0)
+                        if self.show_damage_numbers:
+                            self.texts.append(FloatText(p.x, p.y - p.r - 8, f"-{int(b.dmg)}", C_HP))
+                        for _ in range(10):
+                            self.particles.append(Particle(p.x, p.y, C_HP))
+                    break
+            if hit:
                 continue
 
             alive.append(b)
@@ -1905,7 +2054,7 @@ class Game:
         e.flash = 0.09
         if not silent:
             self.audio.play("hit")
-        if not silent:
+        if not silent and self.show_damage_numbers:
             self.texts.append(
                 FloatText(
                     e.x, e.y - e.r, str(int(amount)), C_GOLD if amount > 20 else C_UI
@@ -1927,13 +2076,19 @@ class Game:
                 self.gems.append(Gem(e.x, e.y, 0, heart=True))
 
     def update_pickups(self, dt):
-        p = self.player
         keep = []
         for g in self.gems:
             g.t += dt
-            dx, dy = p.x - g.x, p.y - g.y
-            d = math.hypot(dx, dy)
-            if d < p.magnet:
+            # 젬 하나는 가장 가까운 살아있는 플레이어한테만 끌려가고 먹힌다 —
+            # 둘 다에게 동시에 끌리면 어중간한 곳에서 진동한다.
+            pi = self.nearest_player_index(g.x, g.y)
+            p = self.players[pi] if pi is not None else None
+            d = 1e18
+            dx = dy = 0.0
+            if p is not None:
+                dx, dy = p.x - g.x, p.y - g.y
+                d = math.hypot(dx, dy)
+            if p is not None and d < p.magnet:
                 s = 460 if d < p.magnet * 0.5 else 240
                 g.x += dx / max(d, 1e-6) * s * dt
                 g.y += dy / max(d, 1e-6) * s * dt
@@ -1942,7 +2097,7 @@ class Game:
                 g.y += g.vy * dt
                 g.vx *= 0.9
                 g.vy *= 0.9
-            if d < 18:
+            if p is not None and d < 18:
                 if g.heart:
                     self.audio.play("heal")
                     p.hp = min(p.max_hp, p.hp + 25)
@@ -1957,30 +2112,72 @@ class Game:
             keep.append(g)
         self.gems = keep
 
-        while p.xp >= p.xp_need:
-            p.xp -= p.xp_need
-            p.level += 1
-            # [ChatGPT 수정] 난이도가 높을수록 다음 능력 선택까지 더 많은 경험치가 필요하다.
-            p.xp_need = (6 + 5 * p.level) * p.xp_need_mul
-            self.open_levelup()
+        # 둘이 같은 프레임에 동시에 레벨업할 수도 있으니 큐에 쌓아두고 하나씩 보여준다.
+        for pi, p in enumerate(self.players):
+            while p.xp >= p.xp_need:
+                p.xp -= p.xp_need
+                p.level += 1
+                # [ChatGPT 수정] 난이도가 높을수록 다음 능력 선택까지 더 많은 경험치가 필요하다.
+                p.xp_need = (6 + 5 * p.level) * p.xp_need_mul
+                self.levelup_queue.append(pi)
+        if self.levelup_queue:
+            self.open_levelup(self.levelup_queue.pop(0))
 
-    def open_levelup(self):
-        pool = [u for u in UPGRADES if self.player.taken.get(u["key"], 0) < u["max"]]
+    def open_levelup(self, player_index):
+        self.levelup_player = player_index
+        pool = [
+            u for u in UPGRADES
+            if self.players[player_index].taken.get(u["key"], 0) < u["max"]
+        ]
         random.shuffle(pool)
         self.choices = pool[:3]
         if self.choices:
             self.audio.play("levelup")
             self.state = "levelup"
 
+    def level_summary_text(self):
+        """승리/패배 화면에 쓰는 레벨 표시. 협동이면 P1/P2를 나란히 보여준다."""
+        if len(self.players) > 1:
+            return "   ".join(
+                f"P{i + 1} {self.T['lv']} {p.level}" for i, p in enumerate(self.players)
+            )
+        return f"{self.T['lv']} {self.players[0].level}"
+
     # ------------------------------------------------------ 그리기
+    def update_camera_zoom(self, dt):
+        """혼자면 항상 1.0 그대로. 협동이면 살아있는 두 명을 다 담는 데 필요한
+        배율을 목표로 잡고 COOP_ZOOM_LERP 속도로 부드럽게 따라간다(뚝뚝 끊기지 않게)."""
+        ps = self.alive_players()
+        if len(ps) <= 1:
+            target = 1.0
+        else:
+            xs = [p.x for p in ps]
+            ys = [p.y for p in ps]
+            need_w = (max(xs) - min(xs)) + COOP_ZOOM_MARGIN * 2
+            need_h = (max(ys) - min(ys)) + COOP_ZOOM_MARGIN * 2
+            fit = min(1.0, SW / max(need_w, 1.0), SH / max(need_h, 1.0))
+            target = max(COOP_ZOOM_MIN, fit)
+        k = min(1.0, COOP_ZOOM_LERP * dt)
+        self.cam_zoom += (target - self.cam_zoom) * k
+
     def camera(self):
-        p = self.player
-        cx = clamp(p.x - SW / 2, 0, WORLD_W - SW)
-        cy = clamp(p.y - SH / 2, 0, WORLD_H - SH)
+        """카메라 중심(cx, cy)과 줌 배율을 돌려준다. 1인이면 zoom은 항상 1.0으로 고정되어
+        있으므로(update_camera_zoom 참고) 아래 계산은 예전 단일 플레이어 카메라와 동일하다."""
+        ps = self.alive_players()
+        mx = sum(p.x for p in ps) / len(ps)
+        my = sum(p.y for p in ps) / len(ps)
+        zoom = self.cam_zoom
+        vw, vh = SW / zoom, SH / zoom
+        cx = clamp(mx - vw / 2, 0, max(0, WORLD_W - vw))
+        cy = clamp(my - vh / 2, 0, max(0, WORLD_H - vh))
         if self.shake > 0.2:
             cx += random.uniform(-self.shake, self.shake)
             cy += random.uniform(-self.shake, self.shake)
-        return clamp(cx, 0, WORLD_W - SW), clamp(cy, 0, WORLD_H - SH)
+        return (
+            clamp(cx, 0, max(0, WORLD_W - vw)),
+            clamp(cy, 0, max(0, WORLD_H - vh)),
+            zoom,
+        )
 
     def blit_center(self, img, x, y, cam, flip=False, flash=False):
         s = self.flash_img[img] if flash else self.img[img]
@@ -1999,18 +2196,29 @@ class Game:
         return self.aura_cache[r]
 
     def draw_world(self):
-        cam = self.camera()
-        self.screen.blit(self.bg, (0, 0), pygame.Rect(cam[0], cam[1], SW, SH))
+        cx, cy, zoom = self.camera()
+        cam = (cx, cy)
+        # 줌아웃 중(협동, 둘이 멀리 떨어짐)이면 필요한 만큼 더 넓은 임시 캔버스에
+        # 평소와 똑같은 좌표로 그린 다음, 마지막에 화면 크기로 한 번에 축소해서 붙인다.
+        # present_frame()의 레터박싱과 같은 요령이라 draw_world() 안의 그리기 코드
+        # 자체는(화면 크기를 참조하는 몇 군데만 빼면) 손댈 필요가 없다.
+        vw, vh = (SW, SH) if zoom >= 0.999 else (round(SW / zoom), round(SH / zoom))
+        real_screen = self.screen
+        if (vw, vh) != (SW, SH):
+            if self.world_surf is None or self.world_surf.get_size() != (vw, vh):
+                self.world_surf = pygame.Surface((vw, vh))
+            self.screen = self.world_surf
+
+        self.screen.blit(self.bg, (0, 0), pygame.Rect(cam[0], cam[1], vw, vh))
         # 장애물 레이어. 보스전에는 알파가 0까지 떨어져 사라진다.
         if self.terrain_alpha > 0.004:
             self.bg_obst.set_alpha(int(255 * self.terrain_alpha))
-            self.screen.blit(self.bg_obst, (0, 0), pygame.Rect(cam[0], cam[1], SW, SH))
-        p = self.player
+            self.screen.blit(self.bg_obst, (0, 0), pygame.Rect(cam[0], cam[1], vw, vh))
 
         # 디버그: A* 경로
         if self.show_paths:
             for e in self.enemies:
-                if not (-40 < e.x - cam[0] < SW + 40 and -40 < e.y - cam[1] < SH + 40):
+                if not (-40 < e.x - cam[0] < vw + 40 and -40 < e.y - cam[1] < vh + 40):
                     continue  # 화면 밖 적의 경로까지 그리면 알아볼 수 없다
                 if e.path and e.path_i < len(e.path):
                     pts = [(e.x - cam[0], e.y - cam[1])] + [
@@ -2023,10 +2231,13 @@ class Game:
                             self.screen, (255, 200, 120), (int(q[0]), int(q[1])), 3
                         )
 
-        # 오라
-        if p.aura_lv:
-            r = p.aura_radius
-            self.screen.blit(self.aura_surface(r), (p.x - cam[0] - r, p.y - cam[1] - r))
+        # 오라 (플레이어별로 따로 표시, 쓰러진 플레이어는 무기 자체가 멈춰 있으니 안 그림)
+        for pl in self.players:
+            if pl.hp <= 0:
+                continue
+            if pl.aura_lv:
+                r = pl.aura_radius
+                self.screen.blit(self.aura_surface(r), (pl.x - cam[0] - r, pl.y - cam[1] - r))
 
         # 젬 / 하트
         for g in self.gems:
@@ -2058,7 +2269,7 @@ class Game:
 
         # 적
         for e in self.enemies:
-            if -60 < e.x - cam[0] < SW + 60 and -60 < e.y - cam[1] < SH + 60:
+            if -60 < e.x - cam[0] < vw + 60 and -60 < e.y - cam[1] < vh + 60:
                 if e.elite:
                     pygame.draw.circle(
                         self.screen,
@@ -2068,7 +2279,7 @@ class Game:
                         2,
                     )
                 self.blit_center(e.img, e.x, e.y, cam, e.facing < 0, e.flash > 0)
-                if e.hp < e.max_hp:
+                if self.show_enemy_hp_bars and e.hp < e.max_hp:
                     w = e.r * 2
                     x0, y0 = e.x - cam[0] - e.r, e.y - cam[1] - e.r - 8
                     pygame.draw.rect(self.screen, (30, 12, 16), (x0, y0, w, 3))
@@ -2076,10 +2287,13 @@ class Game:
                         self.screen, C_HP, (x0, y0, w * (e.hp / e.max_hp), 3)
                     )
 
-        # 궤도 오브
-        for i in range(p.orbs):
-            a = p.orb_angle + math.tau * i / p.orbs
-            self.blit_center("orb", p.x + math.cos(a) * 76, p.y + math.sin(a) * 76, cam)
+        # 궤도 오브 (플레이어별로 따로 돈다)
+        for pl in self.players:
+            if pl.hp <= 0:
+                continue
+            for i in range(pl.orbs):
+                a = pl.orb_angle + math.tau * i / pl.orbs
+                self.blit_center("orb", pl.x + math.cos(a) * 76, pl.y + math.sin(a) * 76, cam)
 
         # [ChatGPT 수정] 보스 탄환은 플레이어 총알과 색/크기를 다르게 그려 쉽게 구분한다.
         for b in self.boss_bullets:
@@ -2088,9 +2302,16 @@ class Game:
             pygame.draw.circle(self.screen, (225, 120, 255), (bx, by), b.r)
             pygame.draw.circle(self.screen, (255, 225, 255), (bx, by), 2)
 
-        # 플레이어 (무적 시간 동안 깜빡임)
-        if not (p.iframe > 0 and int(p.iframe * 20) % 2 == 0):
-            self.blit_center("player", p.x, p.y, cam, p.facing < 0)
+        # 플레이어 (무적 시간 동안 깜빡임). 1P/2P는 색만 다른 별도 스프라이트
+        # ("player1"/"player2", gen_assets.make_player가 둘 다 만들어 둠)로 구분한다.
+        for i, pl in enumerate(self.players):
+            if pl.hp <= 0:
+                # 쓰러짐: 무적 깜빡임보다 훨씬 듬성듬성 보여서 "빠졌다"는 걸 알 수 있게.
+                if int(self.time * 4) % 3 == 0:
+                    self.blit_center(f"player{i + 1}", pl.x, pl.y, cam, pl.facing < 0)
+                continue
+            if not (pl.iframe > 0 and int(pl.iframe * 20) % 2 == 0):
+                self.blit_center(f"player{i + 1}", pl.x, pl.y, cam, pl.facing < 0)
 
         # 총알
         for b in self.bullets:
@@ -2118,6 +2339,13 @@ class Game:
             surf.set_alpha(int(255 * min(1, o.life / 0.6)))
             self.screen.blit(surf, (o.x - cam[0] - surf.get_width() / 2, o.y - cam[1]))
 
+        # 임시 캔버스에 그렸으면 실제 화면 크기로 축소해서 붙이고 되돌린다.
+        # HUD(draw_hud)는 이 축소와 무관하게 항상 원래 해상도로 그 위에 그려서
+        # 글자/숫자가 흐려지지 않는다.
+        if self.screen is not real_screen:
+            self.screen = real_screen
+            self.screen.blit(pygame.transform.smoothscale(self.world_surf, (SW, SH)), (0, 0))
+
         return cam
 
     def draw_hud(self, cam):
@@ -2127,9 +2355,9 @@ class Game:
         pygame.draw.rect(self.screen, (0, 0, 0, 120), (16, 14, 264, 22))
         pygame.draw.rect(self.screen, (48, 20, 26), (18, 16, 260, 18))
         pygame.draw.rect(self.screen, C_HP, (18, 16, 260 * max(0, p.hp) / p.max_hp, 18))
-        hp_s = self.f_small.render(
-            f"{int(max(0, p.hp))} / {int(p.max_hp)}", FONT_ANTIALIAS, C_UI
-        )
+        # 협동일 때만 "P1"을 붙인다 — 혼자면 P2 바 자체가 없으니 붙일 이유가 없다.
+        hp_label = f"P1  {int(max(0, p.hp))} / {int(p.max_hp)}" if len(self.players) > 1 else f"{int(max(0, p.hp))} / {int(p.max_hp)}"
+        hp_s = self.f_small.render(hp_label, FONT_ANTIALIAS, C_UI)
         self.screen.blit(hp_s, (148 - hp_s.get_width() // 2, 17))
         # 경험치바
         pygame.draw.rect(self.screen, (18, 42, 48), (18, 40, 260, 10))
@@ -2139,6 +2367,29 @@ class Game:
         self.screen.blit(
             self.f_mid.render(f"{T['lv']} {p.level}", FONT_ANTIALIAS, C_GOLD), (288, 20)
         )
+
+        # 협동이면 P1 바로 밑에 P2용 체력/경험치 바를 하나 더 그린다(1인이면 이 블록
+        # 자체가 안 그려지니 지금까지의 레이아웃과 완전히 동일하다).
+        if len(self.players) > 1:
+            p2 = self.players[1]
+            y0 = 54
+            pygame.draw.rect(self.screen, (0, 0, 0, 120), (16, y0, 264, 22))
+            pygame.draw.rect(self.screen, (48, 20, 26), (18, y0 + 2, 260, 18))
+            pygame.draw.rect(
+                self.screen, C_HP, (18, y0 + 2, 260 * max(0, p2.hp) / p2.max_hp, 18)
+            )
+            hp2_s = self.f_small.render(
+                f"P2  {int(max(0, p2.hp))} / {int(p2.max_hp)}", FONT_ANTIALIAS, C_UI
+            )
+            self.screen.blit(hp2_s, (148 - hp2_s.get_width() // 2, y0 + 3))
+            pygame.draw.rect(self.screen, (18, 42, 48), (18, y0 + 26, 260, 10))
+            pygame.draw.rect(
+                self.screen, C_XP, (18, y0 + 26, 260 * clamp(p2.xp / p2.xp_need, 0, 1), 10)
+            )
+            self.screen.blit(
+                self.f_mid.render(f"{T['lv']} {p2.level}", FONT_ANTIALIAS, C_GOLD),
+                (288, y0 + 6),
+            )
 
         # [ChatGPT 수정] HP/레벨 UI와 웨이브 정보가 겹치지 않도록 중앙 정보를 두 줄로 분리한다.
         m, s = divmod(int(self.time), 60)
@@ -2181,19 +2432,20 @@ class Game:
         for e in self.enemies:
             if e.kind == "boss":
                 mm.fill((255, 180, 90), (int(e.x / TILE * 2) - 2, int(e.y / TILE * 2) - 2, 5, 5))
-        mm.fill(
-            (120, 220, 255), (int(p.x / TILE * 2) - 1, int(p.y / TILE * 2) - 1, 4, 4)
-        )
+        dot_colors = ((120, 220, 255), (255, 150, 150))
+        for i, pl in enumerate(self.players):
+            col = dot_colors[i % len(dot_colors)]
+            mm.fill(col, (int(pl.x / TILE * 2) - 1, int(pl.y / TILE * 2) - 1, 4, 4))
         self.screen.blit(mm, (SW - mm.get_width() - 14, 14))
 
         # 배속 위젯. 일시정지로 안 들어가도 인게임에서 바로 화살표로 조절할 수 있게
-        # 미니맵 밑에 작고 투명하게 둔다.
-        # [ChatGPT 수정] BGM 음소거 버튼도 같은 영역에 두고, 일시정지 중에는
-        # draw_pause()가 이 두 버튼을 암전 레이어 '위에' 한 번 더 그린다.
+        # 미니맵 밑에 작고 투명하게 둔다. 일시정지 중에는 draw_pause()가 같은 자리에
+        # 암전 레이어 '위에' 한 번 더 그린다.
         if self.state in ("play", "pause"):
             self.draw_speed_widget(mm.get_width())
-            self.draw_bgm_widget(mm.get_width())
-            self.draw_bgm_volume_widget(mm.get_width())
+        # 설정(톱니바퀴) 버튼은 플레이 중에만 — 체력/경험치 바로 밑, 왼쪽 상단.
+        if self.state == "play":
+            self.draw_gear_button()
 
         if self.show_paths:
             dbg = self.f_small.render(
@@ -2252,77 +2504,38 @@ class Game:
                 (ax + aw // 2 - glyph_s.get_width() // 2, y + wh // 2 - glyph_s.get_height() // 2),
             )
 
-    # [ChatGPT 수정] BGM만 따로 켜고 끄는 버튼. 효과음(M 키)에는 영향이 없다.
-    def draw_bgm_widget(self, width, foreground=False):
-        wh = 26
-        x = SW - width - 14
-        y = 14 + 96 + 8 + 26 + 6
+    def gear_button_rect(self):
+        """체력/경험치 바 바로 밑, 톱니바퀴 설정 버튼 자리. 협동이면 P2 바 밑으로 내려간다."""
+        y = 54 if len(self.players) == 1 else 98
+        return pygame.Rect(16, y, 42, 42)
+
+    def draw_gear_button(self):
+        """플레이 중에만 보이는 설정 버튼. ESC(일시정지)와는 별개로 이걸 눌러야 설정 화면이 뜬다."""
+        rect = self.gear_button_rect()
         mouse_pos = self.mouse_logical_pos()
-        btn = ui.Button(x, y, width, wh, "bgm")
+        btn = ui.Button(rect.x, rect.y, rect.w, rect.h, "gear")
         btn.update_hover(mouse_pos)
-        self.bgm_button = btn
+        self.gear_button = btn
 
-        panel = pygame.Surface((width, wh), pygame.SRCALPHA)
-        panel.fill((10, 12, 18, 238 if foreground else 130))
-        self.screen.blit(panel, (x, y))
-
-        if foreground or btn.hover:
-            border_col = C_GOLD if btn.hover else C_XP
-            pygame.draw.rect(
-                self.screen, border_col, (x - 2, y - 2, width + 4, wh + 4), 2, border_radius=5
-            )
-
-        text = self.T["bgm_off"] if self.audio.bgm_muted else self.T["bgm_on"]
-        col = C_HP if self.audio.bgm_muted else C_XP
-        label = self.f_small.render(text, FONT_ANTIALIAS, col)
+        panel = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
+        panel.fill((10, 12, 18, 170))
+        self.screen.blit(panel, rect.topleft)
+        border_col = C_GOLD if btn.hover else (90, 96, 112)
+        pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=6)
+        gear = self.img["gear"]
         self.screen.blit(
-            label,
-            (x + width // 2 - label.get_width() // 2, y + wh // 2 - label.get_height() // 2),
+            gear, (rect.centerx - gear.get_width() // 2, rect.centery - gear.get_height() // 2)
         )
-
-    # [ChatGPT 수정] BGM 음량 전용 조절줄. 기존 BGM 켬/끔 바로 아래에서 < / >로 10%씩 조절한다.
-    def draw_bgm_volume_widget(self, width, foreground=False):
-        aw, wh = 26, 26
-        x = SW - width - 14
-        y = 14 + 96 + 8 + 26 + 6 + 26 + 6
-        panel = pygame.Surface((width, wh), pygame.SRCALPHA)
-        panel.fill((10, 12, 18, 238 if foreground else 130))
-        self.screen.blit(panel, (x, y))
-        if foreground:
-            pygame.draw.rect(
-                self.screen, C_GOLD, (x - 2, y - 2, width + 4, wh + 4), 2, border_radius=5
-            )
-
-        pct = int(round(self.audio.bgm_volume * 100))
-        label_s = self.f_small.render(
-            f"{self.T['bgm_volume']} {pct}%", FONT_ANTIALIAS, C_UI
-        )
-        self.screen.blit(
-            label_s,
-            (x + width // 2 - label_s.get_width() // 2, y + wh // 2 - label_s.get_height() // 2),
-        )
-
-        mouse_pos = self.mouse_logical_pos()
-        self.bgm_volume_buttons = []
-        for id_, ax, glyph, enabled in (
-            ("dec", x, "<", self.audio.bgm_volume > 0.001),
-            ("inc", x + width - aw, ">", self.audio.bgm_volume < 0.999),
-        ):
-            btn = ui.Button(ax, y, aw, wh, id_)
-            btn.update_hover(mouse_pos if enabled else None)
-            self.bgm_volume_buttons.append(btn)
-            col = C_GOLD if btn.hover else (C_UI if enabled else (70, 74, 86))
-            glyph_s = self.f_mid.render(glyph, FONT_ANTIALIAS, col)
-            self.screen.blit(
-                glyph_s,
-                (ax + aw // 2 - glyph_s.get_width() // 2, y + wh // 2 - glyph_s.get_height() // 2),
-            )
 
     def draw_levelup(self):
         ov = pygame.Surface((SW, SH), pygame.SRCALPHA)
         ov.fill((8, 10, 16, 190))
         self.screen.blit(ov, (0, 0))
-        t = self.f_huge.render(self.T["levelup"], FONT_ANTIALIAS, C_GOLD)
+        # 협동이면 지금 누구 차례인지 제목 앞에 표시 — 옆 사람은 화면이 멈춘 이유를 몰라 헷갈릴 수 있다.
+        title_text = self.T["levelup"]
+        if len(self.players) > 1:
+            title_text = f"P{self.levelup_player + 1}  {title_text}"
+        t = self.f_huge.render(title_text, FONT_ANTIALIAS, C_GOLD)
         self.screen.blit(t, (SW // 2 - t.get_width() // 2, 70))
         sub = self.f_small.render(self.T["choose"], FONT_ANTIALIAS, C_DIM)
         self.screen.blit(sub, (SW // 2 - sub.get_width() // 2, 138))
@@ -2349,7 +2562,7 @@ class Game:
             self.screen.blit(name, (x + 20, y + 26))
             desc = self.f_small.render(up["desc"][li], FONT_ANTIALIAS, C_DIM)
             self.screen.blit(desc, (x + 20, y + 78))
-            cur = self.player.taken.get(up["key"], 0)
+            cur = self.players[self.levelup_player].taken.get(up["key"], 0)
             for k in range(up["max"]):
                 col = C_GOLD if k < cur else (58, 64, 82)
                 pygame.draw.rect(self.screen, col, (x + 20 + k * 16, y + 118, 12, 8))
@@ -2362,17 +2575,127 @@ class Game:
                 (self.T["pause_home"], self.f_mid, C_DIM),
             ]
         )
-        # [ChatGPT 수정] 암전 레이어가 그려진 뒤에 같은 배속/BGM 버튼을 다시 그려
+        # [ChatGPT 수정] 암전 레이어가 그려진 뒤에 같은 배속 위젯을 다시 그려
         # '앞에 떠 있는 실제 클릭 가능한 설정'이라는 것이 눈에 확실히 보이게 한다.
         width = self.minimap_bg.get_width()
         self.draw_speed_widget(width, foreground=True)
-        self.draw_bgm_widget(width, foreground=True)
-        self.draw_bgm_volume_widget(width, foreground=True)
+
+    def draw_settings(self):
+        """톱니바퀴 버튼으로 여는 설정 화면. ESC/P는 여기서 아무 동작도 안 하도록
+        on_key에 이 상태에 대한 분기를 일부러 안 만들었다 — 오직 마우스로만 닫는다."""
+        ov = pygame.Surface((SW, SH), pygame.SRCALPHA)
+        ov.fill((8, 10, 16, 205))
+        self.screen.blit(ov, (0, 0))
+
+        T = self.T
+        # 토글 버튼은 전부 같은 크기로 통일한다(원래 60x26이었는데 "효과음 켬" 글자가
+        # 넘쳐서 20%씩 키운 걸, 나머지 버튼들도 크기를 맞춰달라는 피드백 반영).
+        btn_w, btn_h = 72, 31
+        panel_w, panel_h = 600, 400
+        px, py = SW // 2 - panel_w // 2, SH // 2 - panel_h // 2
+        pygame.draw.rect(self.screen, C_PANEL, (px, py, panel_w, panel_h), border_radius=12)
+        pygame.draw.rect(self.screen, C_XP, (px, py, panel_w, panel_h), 2, border_radius=12)
+
+        title_s = self.f_huge.render(T["settings"], FONT_ANTIALIAS, C_GOLD)
+        self.screen.blit(title_s, (SW // 2 - title_s.get_width() // 2, py + 20))
+
+        mouse_pos = self.mouse_logical_pos()
+        self.settings_buttons = []
+        self.settings_sliders = {}
+        slider_x, slider_w = px + 210, 200
+        label_x = px + 30
+        row_y = py + 82
+        row_gap = 58
+
+        def toggle_button(label, active_col, x, y):
+            btn = ui.Button(x, y, btn_w, btn_h, "")
+            btn.update_hover(mouse_pos)
+            pygame.draw.rect(
+                self.screen, C_GOLD if btn.hover else (60, 66, 82), btn.rect, 2, border_radius=6
+            )
+            lab = self.f_small.render(label, FONT_ANTIALIAS, active_col)
+            # 가운데 정렬: 버튼 중심에서 글자 폭/높이의 절반만큼 빼서 위치를 잡는다.
+            self.screen.blit(
+                lab, (btn.rect.centerx - lab.get_width() // 2, btn.rect.centery - lab.get_height() // 2)
+            )
+            return btn
+
+        def volume_row(y, label, value, slider_id, mute_label, mute_id, muted):
+            self.screen.blit(self.f_mid.render(label, FONT_ANTIALIAS, C_UI), (label_x, y))
+            track = pygame.Rect(slider_x, y + 6, slider_w, 10)
+            hit = pygame.Rect(slider_x, y - 4, slider_w, 26)
+            self.settings_sliders[slider_id] = hit
+            pygame.draw.rect(self.screen, (18, 20, 30), track, border_radius=5)
+            fill_w = int(slider_w * clamp(value, 0.0, 1.0))
+            if fill_w > 0:
+                pygame.draw.rect(self.screen, C_XP, (track.x, track.y, fill_w, track.h), border_radius=5)
+            thumb_hover = mouse_pos is not None and hit.collidepoint(mouse_pos)
+            thumb_col = C_GOLD if (thumb_hover or self.dragging_slider == slider_id) else C_UI
+            thumb_pos = (track.x + fill_w, track.centery)
+            pygame.draw.circle(self.screen, thumb_col, thumb_pos, 8)
+            pygame.draw.circle(self.screen, (14, 16, 24), thumb_pos, 8, 2)
+            pct_s = self.f_small.render(f"{int(round(value * 100))}%", FONT_ANTIALIAS, C_UI)
+            self.screen.blit(pct_s, (slider_x + slider_w + 14, y))
+            mb = toggle_button(mute_label, C_HP if muted else C_XP, px + panel_w - 30 - btn_w, y - 4)
+            mb.id = mute_id
+            self.settings_buttons.append(mb)
+
+        def bool_row(y, label, on, on_id):
+            self.screen.blit(self.f_mid.render(label, FONT_ANTIALIAS, C_UI), (label_x, y))
+            btn = toggle_button(
+                T["on"] if on else T["off"], C_XP if on else C_HP, px + panel_w - 30 - btn_w, y - 4
+            )
+            btn.id = on_id
+            self.settings_buttons.append(btn)
+
+        volume_row(
+            row_y, T["bgm_volume"], self.audio.bgm_volume, "bgm",
+            T["bgm_off"] if self.audio.bgm_muted else T["bgm_on"], "bgm_mute", self.audio.bgm_muted,
+        )
+        row_y += row_gap
+        volume_row(
+            row_y, T["sfx_volume"], self.audio.sfx_volume, "sfx",
+            T["muted"] if self.audio.muted else T["unmuted"], "sfx_mute", self.audio.muted,
+        )
+        row_y += row_gap
+        bool_row(row_y, T["damage_numbers"], self.show_damage_numbers, "damage_toggle")
+        row_y += row_gap
+        bool_row(row_y, T["enemy_hp_bars"], self.show_enemy_hp_bars, "enemy_hp_toggle")
+        row_y += row_gap
+
+        close_w, close_h = 140, 40
+        close_rect = pygame.Rect(SW // 2 - close_w // 2, row_y + 10, close_w, close_h)
+        close_btn = ui.Button(close_rect.x, close_rect.y, close_w, close_h, "close")
+        close_btn.update_hover(mouse_pos)
+        self.settings_buttons.append(close_btn)
+        pygame.draw.rect(self.screen, C_PANEL, close_rect, border_radius=8)
+        pygame.draw.rect(
+            self.screen, C_GOLD if close_btn.hover else C_XP, close_rect, 2, border_radius=8
+        )
+        close_s = self.f_mid.render(T["close"], FONT_ANTIALIAS, C_UI)
+        self.screen.blit(
+            close_s,
+            (close_rect.centerx - close_s.get_width() // 2, close_rect.centery - close_s.get_height() // 2),
+        )
+
+        # 마우스 왼쪽 버튼을 누른 채 끌면 슬라이더가 계속 따라온다(헤드리스에서는 스킵).
+        if not self.headless:
+            if self.dragging_slider is not None and pygame.mouse.get_pressed()[0] and mouse_pos is not None:
+                rect = self.settings_sliders.get(self.dragging_slider)
+                if rect:
+                    pct = clamp((mouse_pos[0] - rect.x) / rect.w, 0.0, 1.0)
+                    if self.dragging_slider == "bgm":
+                        self.audio.set_bgm_volume(pct)
+                    elif self.dragging_slider == "sfx":
+                        self.audio.set_sfx_volume(pct)
+            elif self.dragging_slider is not None and not pygame.mouse.get_pressed()[0]:
+                self.dragging_slider = None
 
     def draw_title(self):
         """타이틀 = 메인 메뉴 허브. 별도 "menu" 상태를 만들지 않고 title을 그대로 확장한다
         (스페이스/엔터로 바로 시작하는 기존 단축키와 동일한 목적지라 상태를 나눌 이유가 없다).
-        멀티/설정/리더보드는 아직 화면 자체가 없어서(배치 K/I/F) 눌러도 "준비 중" 배너만 뜬다.
+        멀티(협동)는 배치 K에서 연결됨. 설정/리더보드는 아직 화면 자체가 없어서(배치 I/F)
+        눌러도 "준비 중" 배너만 뜬다.
         """
         self.screen.fill(C_BG)
         title_s = self.f_huge.render(self.T["title"], FONT_ANTIALIAS, C_XP)
@@ -2381,7 +2704,7 @@ class Game:
 
         items = (
             ("single", self.T["menu_single"], True),
-            ("multi", self.T["menu_multi"], False),
+            ("multi", self.T["menu_multi"], True),
             ("settings", self.T["menu_settings"], False),
             ("leaderboard", self.T["menu_leaderboard"], False),
         )
@@ -2526,6 +2849,8 @@ class Game:
                     self.draw_levelup()
                 elif self.state == "pause":
                     self.draw_pause()
+                elif self.state == "settings":
+                    self.draw_settings()
                 elif self.state == "win":
                     m, sec = divmod(int(self.time), 60)
                     self.draw_center_text(
@@ -2538,7 +2863,7 @@ class Game:
                                 C_UI,
                             ),
                             (
-                                f"{self.T['lv']} {self.player.level}   {self.T['kill']} {self.kills}",
+                                f"{self.level_summary_text()}   {self.T['kill']} {self.kills}",
                                 self.f_mid,
                                 C_DIM,
                             ),
@@ -2557,7 +2882,7 @@ class Game:
                                 C_UI,
                             ),
                             (
-                                f"{self.T['lv']} {self.player.level}   {self.T['kill']} {self.kills}",
+                                f"{self.level_summary_text()}   {self.T['kill']} {self.kills}",
                                 self.f_mid,
                                 C_DIM,
                             ),
@@ -2589,6 +2914,9 @@ class Game:
         elif key == pygame.K_F1:
             self.show_paths = not self.show_paths
         elif self.state == "title" and key in (pygame.K_SPACE, pygame.K_RETURN):
+            # 키보드 단축키는 항상 싱글로 시작한다 — 협동은 마우스로 "협동" 버튼을
+            # 눌러야만 들어갈 수 있고, 이전 판이 협동이었어도 여기서 확실히 되돌린다.
+            self.num_players = 1
             self.state = "difficulty"
         elif self.state == "difficulty" and key in (
             pygame.K_1,
@@ -2631,7 +2959,8 @@ class Game:
         if self.state == "title":
             for btn in self.menu_buttons:
                 if btn.hit(pos):
-                    if btn.id == "single":
+                    if btn.id in ("single", "multi"):
+                        self.num_players = 2 if btn.id == "multi" else 1
                         self.audio.play("select")
                         self.state = "difficulty"
                     else:
@@ -2647,22 +2976,40 @@ class Game:
                 if btn.hit(pos):
                     self.confirm_difficulty_choice(btn.id)
                     break
-        # [ChatGPT 수정] 일시정지 중에도 기존 배속 위젯의 좌우 버튼과
-        # BGM 전용 음소거 버튼을 그대로 클릭할 수 있다.
+        # 일시정지 중에도 배속 위젯 좌우 버튼은 그대로 클릭할 수 있다.
         elif self.state in ("play", "pause"):
-            if self.bgm_button is not None and self.bgm_button.hit(pos):
-                self.audio.toggle_bgm_mute()
+            # 설정(톱니바퀴)은 ESC/일시정지와 완전히 별개 — 플레이 중에만, 마우스로만 연다.
+            if self.state == "play" and self.gear_button is not None and self.gear_button.hit(pos):
+                self.state = "settings"
                 self.audio.play("select")
                 return True
-            # [ChatGPT 수정] 게임 중/ESC 일시정지 중 모두 BGM 음량 < / > 버튼을 누를 수 있다.
-            for btn in self.bgm_volume_buttons:
-                if btn.hit(pos):
-                    self.audio.step_bgm_volume(btn.id)
-                    self.audio.play("select")
-                    return True
             for btn in self.speed_widget_buttons:
                 if btn.hit(pos):
                     self.step_game_speed(btn.id)
+                    break
+        elif self.state == "settings":
+            for btn in self.settings_buttons:
+                if btn.hit(pos):
+                    if btn.id == "bgm_mute":
+                        self.audio.toggle_bgm_mute()
+                    elif btn.id == "sfx_mute":
+                        self.audio.toggle_mute()
+                    elif btn.id == "damage_toggle":
+                        self.show_damage_numbers = not self.show_damage_numbers
+                    elif btn.id == "enemy_hp_toggle":
+                        self.show_enemy_hp_bars = not self.show_enemy_hp_bars
+                    elif btn.id == "close":
+                        self.state = "play"
+                    self.audio.play("select")
+                    return True
+            for sid, rect in self.settings_sliders.items():
+                if rect.collidepoint(pos):
+                    pct = clamp((pos[0] - rect.x) / rect.w, 0.0, 1.0)
+                    if sid == "bgm":
+                        self.audio.set_bgm_volume(pct)
+                    elif sid == "sfx":
+                        self.audio.set_sfx_volume(pct)
+                    self.dragging_slider = sid
                     break
         return True
 
@@ -2674,8 +3021,12 @@ class Game:
 
     def confirm_levelup_choice(self, i):
         self.audio.play("select")
-        self.player.apply_upgrade(self.choices[i])
-        self.state = "play"
+        self.players[self.levelup_player].apply_upgrade(self.choices[i])
+        # 같은 프레임에 둘 다 레벨업했으면 큐에 남은 다음 사람 화면을 이어서 보여준다.
+        if self.levelup_queue:
+            self.open_levelup(self.levelup_queue.pop(0))
+        else:
+            self.state = "play"
 
     def confirm_difficulty_choice(self, key):
         self.audio.play("select")
@@ -2694,9 +3045,11 @@ class Game:
     # 자동 플레이(테스트용)
     def auto_play(self, frames):
         if self.state == "title":
-            # 마우스 클릭 라우팅(on_click)까지 실제로 지나가도록 "싱글" 버튼을 "클릭"한다.
+            # selftest_mode가 "2p"면 "협동" 버튼을, 아니면 지금까지처럼 "싱글" 버튼을
+            # 실제로 on_click()으로 눌러서 마우스 클릭 라우팅까지 검증한다.
+            want = "multi" if getattr(self, "selftest_mode", "1p") == "2p" else "single"
             for btn in self.menu_buttons:
-                if btn.id == "single":
+                if btn.id == want:
                     self.on_click(btn.rect.center)
                     break
         elif self.state == "difficulty":
@@ -2717,19 +3070,33 @@ class Game:
                 if btn.id == "inc":
                     self.on_click(btn.rect.center)
                     break
-        if frames % 24 == 0:
-            self._auto_dir = random.choice(
-                [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]
+        elif self.state == "play" and frames % 300 == 210 and self.gear_button:
+            # 설정(톱니바퀴) 진입 라우팅도 selftest가 주기적으로 지나가게 한다.
+            self.on_click(self.gear_button.rect.center)
+        elif self.state == "settings":
+            # 슬라이더 클릭과 토글/닫기 버튼까지 실제 on_click 경로로 한 번씩 눌러본다.
+            rect = self.settings_sliders.get("bgm")
+            if rect:
+                self.on_click((rect.x + rect.w // 2, rect.centery))
+            for btn in self.settings_buttons:
+                if btn.id == "close":
+                    self.on_click(btn.rect.center)
+                    break
+        # 플레이어마다 따로 무작위 방향으로 걸어다니게 한다 — 둘이 서로 다른 방향으로
+        # 흩어져야 K2의 개별 타겟팅과 K3의 줌아웃이 실제로 트리거되어 검증된다.
+        if frames % 24 == 0 or len(self._auto_dirs) != len(self.players):
+            self._auto_dirs = [
+                random.choice([pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d])
+                for _ in self.players
+            ]
+        for pl, k in zip(self.players, self._auto_dirs):
+            v = pl.speed / FPS * 1.0
+            move_and_collide(
+                self.grid,
+                pl,
+                v * (1 if k == pygame.K_d else -1 if k == pygame.K_a else 0),
+                v * (1 if k == pygame.K_s else -1 if k == pygame.K_w else 0),
             )
-        k = getattr(self, "_auto_dir", pygame.K_d)
-        p = self.player
-        v = p.speed / FPS * 1.0
-        move_and_collide(
-            self.grid,
-            p,
-            v * (1 if k == pygame.K_d else -1 if k == pygame.K_a else 0),
-            v * (1 if k == pygame.K_s else -1 if k == pygame.K_w else 0),
-        )
 
 
 def main():
@@ -2741,6 +3108,13 @@ def main():
         g.time = 0.0
         g.run(max_frames=1800)
         print("selftest OK")
+
+        # 협동(2P) 경로는 메인메뉴 "협동" 버튼 클릭부터 실제로 지나가야 의미가 있어서
+        # (위 1인 실행은 "play"에서 바로 시작해 메뉴를 건너뛴다) 이번엔 title부터 시작한다.
+        g2 = Game(headless=True)
+        g2.selftest_mode = "2p"
+        g2.run(max_frames=1800)
+        print("selftest OK (2p)")
         return
     Game().run()
 
